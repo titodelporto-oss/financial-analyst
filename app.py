@@ -8,55 +8,109 @@ import streamlit as st
 from src.charting import build_signal_chart
 from src.screener import screen_tickers
 
-st.set_page_config(page_title="Analista Azionario", layout="wide", page_icon="📈")
+st.set_page_config(page_title="Analista Azionario", layout="wide")
 
 CACHE_PATH = Path(__file__).resolve().parent / "cache" / "latest_screening.json"
 
+INK = "#111111"
+INK_SECONDARY = "#4a4a4a"
+BRAND = "#0d2f5e"  # dark navy masthead accent - kept separate from the green/red signal colors
+GOOD = "#0a6b2d"
+CRITICAL = "#a3231f"
+RULE = "#111111"
+
 st.markdown(
-    """
+    f"""
     <style>
-    .signal-card {
-        border-radius: 12px;
-        padding: 18px 22px;
-        margin-bottom: 18px;
-        border: 1px solid rgba(11,11,11,0.10);
-    }
-    .signal-card.buy { border-left: 5px solid #0ca30c; }
-    .signal-card.sell { border-left: 5px solid #d03b3b; }
-    .signal-badge {
+    html, body, [class*="st-"], .stMarkdown, .stText, p, span, div, table, th, td {{
+        font-family: "Times New Roman", Times, Georgia, serif !important;
+    }}
+    .stApp {{ background-color: #f7f6f2; }}
+
+    .masthead {{
+        border-top: 4px double {RULE};
+        border-bottom: 2px solid {RULE};
+        padding: 14px 0 10px 0;
+        margin-bottom: 6px;
+        text-align: center;
+    }}
+    .masthead h1 {{
+        font-family: "Times New Roman", Times, serif !important;
+        font-weight: 700;
+        letter-spacing: 2px;
+        font-size: 2.4rem;
+        color: {BRAND};
+        margin: 0;
+        text-transform: uppercase;
+    }}
+    .masthead .kicker {{
+        font-style: italic;
+        color: {INK_SECONDARY};
+        font-size: 0.95rem;
+        margin-top: 4px;
+    }}
+
+    .section-rule {{
+        border-bottom: 2px solid {RULE};
+        margin: 22px 0 14px 0;
+        padding-bottom: 4px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 1.1rem;
+    }}
+    .section-rule.buy {{ color: {GOOD}; border-color: {GOOD}; }}
+    .section-rule.sell {{ color: {CRITICAL}; border-color: {CRITICAL}; }}
+
+    .signal-card {{
+        border: 1px solid #cfcabf;
+        background-color: #ffffff;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+    }}
+    .signal-card.buy {{ border-top: 3px solid {GOOD}; }}
+    .signal-card.sell {{ border-top: 3px solid {CRITICAL}; }}
+    .signal-badge {{
         display: inline-block;
-        padding: 3px 12px;
-        border-radius: 999px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        color: white;
-    }
-    .signal-badge.buy { background-color: #0ca30c; }
-    .signal-badge.sell { background-color: #d03b3b; }
-    .signal-ticker { font-size: 1.4rem; font-weight: 700; margin-left: 10px; }
-    .signal-sub { color: #898781; font-size: 0.9rem; }
-    .signal-reason { margin: 4px 0; }
-    .levels-row { display: flex; gap: 28px; margin-top: 10px; margin-bottom: 6px; }
-    .level-box { text-align: left; }
-    .level-label { font-size: 0.78rem; color: #898781; text-transform: uppercase; }
-    .level-value { font-size: 1.1rem; font-weight: 600; }
+        padding: 2px 10px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        border: 1px solid;
+    }}
+    .signal-badge.buy {{ color: {GOOD}; border-color: {GOOD}; }}
+    .signal-badge.sell {{ color: {CRITICAL}; border-color: {CRITICAL}; }}
+    .signal-ticker {{ font-size: 1.5rem; font-weight: 700; margin-left: 12px; color: {INK}; }}
+    .signal-sub {{ color: {INK_SECONDARY}; font-size: 0.92rem; font-style: italic; }}
+    .levels-row {{ display: flex; gap: 32px; margin-top: 12px; margin-bottom: 8px; }}
+    .level-box {{ text-align: left; }}
+    .level-label {{ font-size: 0.75rem; color: {INK_SECONDARY}; text-transform: uppercase; letter-spacing: 0.5px; }}
+    .level-value {{ font-size: 1.15rem; font-weight: 700; }}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("📈 Analista Azionario")
+st.markdown(
+    """
+    <div class="masthead">
+        <h1>Analista Azionario</h1>
+        <div class="kicker">Screening quantitativo &middot; S&amp;P 500 + Nasdaq 100</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 st.caption(
-    "Segnali selettivi su S&P 500 + Nasdaq 100: uniscono indicatori tecnici che anticipano "
-    "il movimento (divergenze RSI, incroci Stocastico, accelerazione MACD) a un filtro sui "
-    "fondamentali (Altman Z-Score, Piotroski F-Score, Beneish M-Score, target price analisti). "
+    "Segnali selettivi: indicatori tecnici che anticipano il movimento (divergenze RSI, "
+    "incroci Stocastico, accelerazione MACD) combinati a un filtro sui fondamentali (Altman "
+    "Z-Score, Piotroski F-Score, Beneish M-Score, target price degli analisti). "
     "Non è consulenza finanziaria — è un supporto alla decisione: verifica sempre autonomamente."
 )
 
 
 def _signal_card(r: dict) -> None:
     kind = r["signal"].lower()
-    label = "SEGNALE DI ACQUISTO" if r["signal"] == "BUY" else "SEGNALE DI VENDITA"
+    label = "ACQUISTO" if r["signal"] == "BUY" else "VENDITA"
 
     st.markdown(f'<div class="signal-card {kind}">', unsafe_allow_html=True)
     st.markdown(
@@ -74,10 +128,10 @@ def _signal_card(r: dict) -> None:
     if r["signal"] == "BUY":
         if r.get("stop_loss"):
             levels += f"""<div class="level-box"><div class="level-label">Stop loss</div>
-                <div class="level-value" style="color:#d03b3b">${r['stop_loss']:.2f}</div></div>"""
+                <div class="level-value" style="color:{CRITICAL}">${r['stop_loss']:.2f}</div></div>"""
         if r.get("take_profit"):
             levels += f"""<div class="level-box"><div class="level-label">Take profit</div>
-                <div class="level-value" style="color:#0ca30c">${r['take_profit']:.2f}</div></div>"""
+                <div class="level-value" style="color:{GOOD}">${r['take_profit']:.2f}</div></div>"""
     levels += "</div>"
     st.markdown(levels, unsafe_allow_html=True)
 
@@ -92,7 +146,7 @@ def _signal_card(r: dict) -> None:
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-tab_signals, tab_manual = st.tabs(["🎯 Segnali di oggi", "🔍 Analisi manuale"])
+tab_signals, tab_manual = st.tabs(["SEGNALI DI OGGI", "ANALISI MANUALE"])
 
 with tab_signals:
     if not CACHE_PATH.exists():
@@ -116,11 +170,11 @@ with tab_signals:
             )
         else:
             if buys:
-                st.subheader(f"🟢 Acquisto ({len(buys)})")
+                st.markdown(f'<div class="section-rule buy">Acquisto — {len(buys)}</div>', unsafe_allow_html=True)
                 for r in sorted(buys, key=lambda r: r["target_upside_pct"] or 0, reverse=True):
                     _signal_card(r)
             if sells:
-                st.subheader(f"🔴 Vendita ({len(sells)})")
+                st.markdown(f'<div class="section-rule sell">Vendita — {len(sells)}</div>', unsafe_allow_html=True)
                 for r in sells:
                     _signal_card(r)
 
