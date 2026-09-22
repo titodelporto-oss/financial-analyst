@@ -6,7 +6,10 @@ import pandas as pd
 import streamlit as st
 
 from src.charting import build_signal_chart
+from src.multiframe import TIMEFRAME_LABELS
 from src.screener import screen_tickers
+
+TIMEFRAME_ORDER = ["1S", "1G", "4H", "30M"]
 
 st.set_page_config(page_title="Analista Azionario", layout="wide")
 
@@ -90,6 +93,15 @@ st.markdown(
     .level-box {{ text-align: left; }}
     .level-label {{ font-size: 0.75rem; color: {INK_SECONDARY}; text-transform: uppercase; letter-spacing: 0.5px; }}
     .level-value {{ font-size: 1.15rem; font-weight: 700; }}
+
+    /* Best-effort: move Plotly's toolbar to the left edge of each chart */
+    .js-plotly-plot .plotly .modebar-container {{
+        left: 0 !important;
+        right: auto !important;
+    }}
+    .js-plotly-plot .plotly .modebar {{
+        flex-direction: column !important;
+    }}
     </style>
     """,
     unsafe_allow_html=True,
@@ -139,13 +151,24 @@ def _signal_card(r: dict) -> None:
     levels += "</div>"
     st.markdown(levels, unsafe_allow_html=True)
 
-    st.markdown("**Perché:**")
-    for reason in r["signal_reasons"]:
-        st.markdown(f"- {reason}")
+    st.markdown("**Analisi:**")
+    narrative = r.get("narrative") or r.get("signal_reasons", [])
+    for paragraph in narrative:
+        st.markdown(paragraph)
 
-    if r.get("chart"):
-        fig = build_signal_chart(r["ticker"], r["chart"], r["signal"], r["entry_price"], r.get("stop_loss"), r.get("take_profit"))
-        st.plotly_chart(fig, use_container_width=True, key=f"chart_{r['ticker']}")
+    charts = r.get("charts") or ({"1G": r["chart"]} if r.get("chart") else {})
+    if charts:
+        available = [tf for tf in TIMEFRAME_ORDER if tf in charts]
+        tf = st.radio(
+            "Timeframe", available, index=available.index("1G") if "1G" in available else 0,
+            horizontal=True, key=f"tf_{r['ticker']}", format_func=lambda k: TIMEFRAME_LABELS.get(k, k),
+            label_visibility="collapsed",
+        )
+        fig = build_signal_chart(r["ticker"], charts[tf], r["signal"], r["entry_price"], r.get("stop_loss"), r.get("take_profit"), timeframe=tf)
+        st.plotly_chart(
+            fig, use_container_width=True, key=f"chart_{r['ticker']}_{tf}",
+            config={"scrollZoom": True, "displaylogo": False},
+        )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -214,11 +237,12 @@ with tab_manual:
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
         for r in results:
-            if r.signal and r.chart:
+            if r.signal and r.charts:
                 _signal_card(
                     {
                         "ticker": r.ticker, "name": r.name, "signal": r.signal,
-                        "signal_reasons": r.signal_reasons, "entry_price": r.entry_price,
-                        "stop_loss": r.stop_loss, "take_profit": r.take_profit, "chart": r.chart,
+                        "signal_reasons": r.signal_reasons, "narrative": r.narrative,
+                        "entry_price": r.entry_price, "stop_loss": r.stop_loss,
+                        "take_profit": r.take_profit, "charts": r.charts,
                     }
                 )

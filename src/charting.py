@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 BG = "#131722"
-GRID = "#1e222d"
+GRID = "rgba(197, 203, 206, 0.06)"
 TEXT = "#d1d4dc"
 TEXT_MUTED = "#787b86"
 UP = "#089981"
@@ -34,7 +34,8 @@ def _pane_label(fig, text: str, row: int, color: str = TEXT) -> None:
     )
 
 
-def build_signal_chart(ticker: str, chart: dict, signal_kind: str, entry_price, stop_loss, take_profit) -> go.Figure:
+def build_signal_chart(ticker: str, chart: dict, signal_kind: str, entry_price, stop_loss, take_profit,
+                        timeframe: str = "1G") -> go.Figure:
     x = chart["dates"]
     last_close = chart["close"][-1]
 
@@ -50,9 +51,9 @@ def build_signal_chart(ticker: str, chart: dict, signal_kind: str, entry_price, 
         font=dict(color="rgba(209, 212, 220, 0.07)", size=90, family="Helvetica, Arial, sans-serif"),
         row=1, col=1,
     )
-    fig.add_trace(go.Scatter(x=x, y=chart["bb_upper"], line=dict(width=1, color=BAND_LINE),
+    fig.add_trace(go.Scatter(x=x, y=chart["bb_upper"], line=dict(width=0.75, color=BAND_LINE),
                               name="Banda sup.", showlegend=False, hoverinfo="skip"), row=1, col=1)
-    fig.add_trace(go.Scatter(x=x, y=chart["bb_lower"], line=dict(width=1, color=BAND_LINE), fill="tonexty",
+    fig.add_trace(go.Scatter(x=x, y=chart["bb_lower"], line=dict(width=0.75, color=BAND_LINE), fill="tonexty",
                               fillcolor=BAND_FILL, name="Banda inf.", showlegend=False, hoverinfo="skip"),
                   row=1, col=1)
     fig.add_trace(
@@ -60,12 +61,12 @@ def build_signal_chart(ticker: str, chart: dict, signal_kind: str, entry_price, 
             x=x, open=chart["open"], high=chart["high"], low=chart["low"], close=chart["close"],
             increasing_line_color=UP, decreasing_line_color=DOWN,
             increasing_fillcolor=UP, decreasing_fillcolor=DOWN,
-            increasing_line_width=1, decreasing_line_width=1,
+            increasing_line_width=0.8, decreasing_line_width=0.8,
             name="Prezzo", showlegend=False,
         ),
         row=1, col=1,
     )
-    fig.add_hline(y=last_close, line=dict(color=LAST_PRICE, width=1, dash="dot"),
+    fig.add_hline(y=last_close, line=dict(color=LAST_PRICE, width=0.75, dash="dot"),
                   annotation_text=f"{last_close:.2f}", annotation_font_color=BG,
                   annotation_bgcolor=LAST_PRICE, annotation_font_size=11,
                   annotation_position="right", row=1, col=1)
@@ -100,19 +101,19 @@ def build_signal_chart(ticker: str, chart: dict, signal_kind: str, entry_price, 
     _pane_label(fig, f"Volume  {chart['volume'][-1]:,.0f}", ROW_VOL, TEXT_MUTED)
 
     # Row 3: RSI
-    fig.add_trace(go.Scatter(x=x, y=chart["rsi"], line=dict(width=1.5, color=RSI_LINE), name="RSI", showlegend=False),
+    fig.add_trace(go.Scatter(x=x, y=chart["rsi"], line=dict(width=1, color=RSI_LINE), name="RSI", showlegend=False),
                   row=ROW_RSI, col=1)
-    fig.add_hline(y=70, line=dict(color=TEXT_MUTED, width=1, dash="dot"), row=ROW_RSI, col=1)
-    fig.add_hline(y=30, line=dict(color=TEXT_MUTED, width=1, dash="dot"), row=ROW_RSI, col=1)
+    fig.add_hline(y=70, line=dict(color=TEXT_MUTED, width=0.75, dash="dot"), row=ROW_RSI, col=1)
+    fig.add_hline(y=30, line=dict(color=TEXT_MUTED, width=0.75, dash="dot"), row=ROW_RSI, col=1)
     _pane_label(fig, f"RSI (14)  {chart['rsi'][-1]:.1f}", ROW_RSI, RSI_LINE)
 
     # Row 4: Stochastic
-    fig.add_trace(go.Scatter(x=x, y=chart["stoch_k"], line=dict(width=1.5, color=STOCH_K), name="%K", showlegend=False),
+    fig.add_trace(go.Scatter(x=x, y=chart["stoch_k"], line=dict(width=1, color=STOCH_K), name="%K", showlegend=False),
                   row=ROW_STOCH, col=1)
-    fig.add_trace(go.Scatter(x=x, y=chart["stoch_d"], line=dict(width=1.5, color=STOCH_D), name="%D", showlegend=False),
+    fig.add_trace(go.Scatter(x=x, y=chart["stoch_d"], line=dict(width=1, color=STOCH_D), name="%D", showlegend=False),
                   row=ROW_STOCH, col=1)
-    fig.add_hline(y=80, line=dict(color=TEXT_MUTED, width=1, dash="dot"), row=ROW_STOCH, col=1)
-    fig.add_hline(y=20, line=dict(color=TEXT_MUTED, width=1, dash="dot"), row=ROW_STOCH, col=1)
+    fig.add_hline(y=80, line=dict(color=TEXT_MUTED, width=0.75, dash="dot"), row=ROW_STOCH, col=1)
+    fig.add_hline(y=20, line=dict(color=TEXT_MUTED, width=0.75, dash="dot"), row=ROW_STOCH, col=1)
     _pane_label(fig, f"Stoc %K {chart['stoch_k'][-1]:.1f}  %D {chart['stoch_d'][-1]:.1f}", ROW_STOCH, STOCH_K)
 
     # Row 5: MACD histogram
@@ -131,12 +132,19 @@ def build_signal_chart(ticker: str, chart: dict, signal_kind: str, entry_price, 
         hovermode="x unified",
         hoverlabel=dict(bgcolor="#1e222d", font=dict(color=TEXT)),
         xaxis_rangeslider_visible=False,
+        dragmode="pan",
     )
+    # Intraday timeframes have long stretches with no trades (overnight, weekends) that
+    # would otherwise be drawn as a straight connecting line across dead time - hide them.
+    rangebreaks = []
+    if timeframe in ("4H", "30M"):
+        rangebreaks = [dict(bounds=["sat", "mon"]), dict(bounds=[16, 9.5], pattern="hour")]
+
     for r in range(1, 6):
-        fig.update_xaxes(gridcolor=GRID, showgrid=True, zeroline=False, showspikes=True,
+        fig.update_xaxes(gridcolor=GRID, griddash="dot", showgrid=True, zeroline=False, showspikes=True,
                           spikemode="across", spikecolor=TEXT_MUTED, spikethickness=1,
-                          spikedash="dot", row=r, col=1)
-        fig.update_yaxes(gridcolor=GRID, showgrid=True, zeroline=False, side="right",
+                          spikedash="dot", rangebreaks=rangebreaks, row=r, col=1)
+        fig.update_yaxes(gridcolor=GRID, griddash="dot", showgrid=True, zeroline=False, side="right",
                           tickfont=dict(color=TEXT_MUTED), row=r, col=1)
     fig.update_xaxes(tickfont=dict(color=TEXT_MUTED), row=5, col=1)
 

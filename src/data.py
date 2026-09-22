@@ -9,7 +9,7 @@ import pandas as pd
 import yfinance as yf
 
 
-def fetch_price_history(ticker_obj: yf.Ticker, period: str = "6mo", interval: str = "1d") -> pd.DataFrame:
+def fetch_price_history(ticker_obj: yf.Ticker, period: str = "2y", interval: str = "1d") -> pd.DataFrame:
     df = ticker_obj.history(period=period, interval=interval)
     if df.empty:
         return df
@@ -24,8 +24,24 @@ def fetch_fundamentals(ticker_obj: yf.Ticker, info: dict) -> dict:
         "shortName": info.get("shortName"),
         "currentPrice": info.get("currentPrice") or info.get("regularMarketPrice"),
         "targetMeanPrice": info.get("targetMeanPrice"),
+        "targetLowPrice": info.get("targetLowPrice"),
+        "targetHighPrice": info.get("targetHighPrice"),
+        "numberOfAnalystOpinions": info.get("numberOfAnalystOpinions"),
         "trailingPE": info.get("trailingPE"),
         "forwardPE": info.get("forwardPE"),
+        "pegRatio": info.get("trailingPegRatio"),
         "recommendationKey": info.get("recommendationKey"),
         "marketCap": info.get("marketCap"),
+        "sector": info.get("sector"),
+        "industry": info.get("industry"),
+        "profitMargins": info.get("profitMargins"),
+        "revenueGrowth": info.get("revenueGrowth"),
+        "earningsGrowth": info.get("earningsQuarterlyGrowth"),
+        "returnOnEquity": info.get("returnOnEquity"),
+        "debtToEquity": info.get("debtToEquity"),
+        "beta": info.get("beta"),
+        "dividendYield": info.get("dividendYield"),
+        "fiftyTwoWeekHigh": info.get("fiftyTwoWeekHigh"),
+        "fiftyTwoWeekLow": info.get("fiftyTwoWeekLow"),
+        "averageVolume": info.get("averageVolume"),
     }
