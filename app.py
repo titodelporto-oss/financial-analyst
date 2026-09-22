@@ -22,16 +22,20 @@ RULE = "#111111"
 st.markdown(
     f"""
     <style>
-    html, body, [class*="st-"], .stMarkdown, .stText, p, span, div, table, th, td {{
+    html, body, [class*="st-"], .stMarkdown, .stText, p, span, div, table, th, td, label {{
         font-family: "Times New Roman", Times, Georgia, serif !important;
+        color: {INK};
     }}
     .stApp {{ background-color: #f7f6f2; }}
+    .block-container {{ padding-top: 1.5rem; max-width: 1100px; }}
+    [data-testid="stCaptionContainer"] p {{ color: {INK_SECONDARY} !important; }}
+    [data-baseweb="tab"] p {{ color: {INK}; font-weight: 600; }}
 
     .masthead {{
         border-top: 4px double {RULE};
         border-bottom: 2px solid {RULE};
-        padding: 14px 0 10px 0;
-        margin-bottom: 6px;
+        padding: 10px 0 8px 0;
+        margin-bottom: 2px;
         text-align: center;
     }}
     .masthead h1 {{
@@ -52,7 +56,7 @@ st.markdown(
 
     .section-rule {{
         border-bottom: 2px solid {RULE};
-        margin: 22px 0 14px 0;
+        margin: 8px 0 12px 0;
         padding-bottom: 4px;
         font-weight: 700;
         letter-spacing: 1px;
@@ -170,11 +174,11 @@ with tab_signals:
             )
         else:
             if buys:
-                st.markdown(f'<div class="section-rule buy">Acquisto — {len(buys)}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="section-rule buy">Acquisto ({len(buys)})</div>', unsafe_allow_html=True)
                 for r in sorted(buys, key=lambda r: r["target_upside_pct"] or 0, reverse=True):
                     _signal_card(r)
             if sells:
-                st.markdown(f'<div class="section-rule sell">Vendita — {len(sells)}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="section-rule sell">Vendita ({len(sells)})</div>', unsafe_allow_html=True)
                 for r in sells:
                     _signal_card(r)
 
