@@ -16,7 +16,7 @@ import pandas as pd
 
 from .indicators import detect_rsi_divergence
 
-MIN_TECHNICAL_CONFIRMATIONS = 2
+MIN_TECHNICAL_CONFIRMATIONS = 3
 
 
 @dataclass
@@ -61,11 +61,11 @@ def _macd_momentum_direction(histogram: pd.Series, bars: int = 3) -> str | None:
 def _fundamentals_buy_gate(ta) -> bool:
     return (
         ta.piotroski_f is not None
-        and ta.piotroski_f >= 6
+        and ta.piotroski_f >= 7
         and ta.altman_zone != "Distress"
         and ta.beneish_flag != "Possibile manipolazione"
         and ta.target_upside_pct is not None
-        and ta.target_upside_pct > 5
+        and ta.target_upside_pct > 10
     )
 
 
