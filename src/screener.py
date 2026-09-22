@@ -11,8 +11,9 @@ on banks, REITs, or young/loss-making companies).
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+import pandas as pd
 import yfinance as yf
 
 from .data import fetch_fundamentals, fetch_price_history
@@ -24,7 +25,14 @@ from .fundamentals import (
     calculate_beneish_m,
     calculate_piotroski_f,
 )
-from .indicators import calculate_macd, calculate_rsi, volume_spike_ratio
+from .indicators import (
+    calculate_bollinger_bands,
+    calculate_macd,
+    calculate_rsi,
+    calculate_stochastic,
+    volume_spike_ratio,
+)
+from .signals import classify_signal
 
 
 @dataclass
@@ -45,6 +53,12 @@ class TickerAnalysis:
     beneish_flag: str
     score: float
     error: str | None = None
+    signal: str | None = None
+    signal_reasons: list = field(default_factory=list)
+    entry_price: float | None = None
+    stop_loss: float | None = None
+    take_profit: float | None = None
+    chart: dict | None = None
 
 
 def _empty(ticker: str, error: str) -> TickerAnalysis:
@@ -52,6 +66,29 @@ def _empty(ticker: str, error: str) -> TickerAnalysis:
         ticker, None, None, None, None, "N/D", "N/D", None, None,
         None, "N/D", None, None, "N/D", 0, error=error,
     )
+
+
+def _safe_list(series, digits: int = 4) -> list:
+    return [None if pd.isna(v) else round(float(v), digits) for v in series]
+
+
+def _build_chart_payload(history, rsi, macd_df, bb, stoch, window: int = 90) -> dict:
+    idx = history.index[-window:]
+    return {
+        "dates": [d.strftime("%Y-%m-%d") for d in idx],
+        "open": _safe_list(history["Open"].tail(window), 2),
+        "high": _safe_list(history["High"].tail(window), 2),
+        "low": _safe_list(history["Low"].tail(window), 2),
+        "close": _safe_list(history["Close"].tail(window), 2),
+        "volume": _safe_list(history["Volume"].tail(window), 0),
+        "bb_upper": _safe_list(bb["upper"].tail(window), 2),
+        "bb_mid": _safe_list(bb["mid"].tail(window), 2),
+        "bb_lower": _safe_list(bb["lower"].tail(window), 2),
+        "rsi": _safe_list(rsi.tail(window)),
+        "stoch_k": _safe_list(stoch["k"].tail(window)),
+        "stoch_d": _safe_list(stoch["d"].tail(window)),
+        "macd_hist": _safe_list(macd_df["histogram"].tail(window)),
+    }
 
 
 def _rsi_zone_and_score(rsi: float | None) -> tuple[str, float]:
@@ -153,6 +190,8 @@ def _analyze_ticker_once(ticker: str) -> TickerAnalysis:
         rsi_series = calculate_rsi(close)
         macd_df = calculate_macd(close)
         vol_ratio_series = volume_spike_ratio(history["Volume"])
+        bb = calculate_bollinger_bands(close)
+        stoch = calculate_stochastic(history["High"], history["Low"], close)
 
         latest_rsi = rsi_series.iloc[-1] if not rsi_series.dropna().empty else None
         latest_vol_ratio = vol_ratio_series.iloc[-1] if not vol_ratio_series.dropna().empty else None
@@ -181,7 +220,7 @@ def _analyze_ticker_once(ticker: str) -> TickerAnalysis:
             + _beneish_score(m_score)
         )
 
-        return TickerAnalysis(
+        ta = TickerAnalysis(
             ticker=ticker,
             name=fundamentals.get("shortName"),
             price=current_price,
@@ -198,6 +237,17 @@ def _analyze_ticker_once(ticker: str) -> TickerAnalysis:
             beneish_flag=beneish_flag(m_score),
             score=total_score,
         )
+
+        signal = classify_signal(ta, history, rsi_series, macd_df, stoch)
+        if signal is not None:
+            ta.signal = signal.kind
+            ta.signal_reasons = signal.reasons
+            ta.entry_price = signal.entry_price
+            ta.stop_loss = signal.stop_loss
+            ta.take_profit = signal.take_profit
+            ta.chart = _build_chart_payload(history, rsi_series, macd_df, bb, stoch)
+
+        return ta
     except Exception as exc:  # noqa: BLE001 - surface any per-ticker failure in the UI/batch log
         return _empty(ticker, str(exc))
 
