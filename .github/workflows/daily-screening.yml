@@ -1,0 +1,35 @@
+name: Screening giornaliero
+
+on:
+  schedule:
+    # 22:00 UTC, lun-ven = sempre dopo la chiusura di NYSE/Nasdaq (16:00 ET),
+    # sia in ora legale (EDT, UTC-4) sia in ora solare (EST, UTC-5)
+    - cron: "0 22 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Esegui screening
+        run: python3 run_screening.py
+
+      - name: Salva i risultati nel repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cache/latest_screening.json
+          git diff --cached --quiet || git commit -m "Aggiorna screening $(date -u +%Y-%m-%d)"
+          git push
