@@ -14,6 +14,14 @@ TIMEFRAME_ORDER = ["1S", "1G", "4H", "30M"]
 st.set_page_config(page_title="Analista Azionario", layout="wide")
 
 CACHE_PATH = Path(__file__).resolve().parent / "cache" / "latest_screening.json"
+NEWS_PATH = Path(__file__).resolve().parent / "cache" / "news_analysis.json"
+
+VERDICT_LABELS = {
+    "conferma": "LE NOTIZIE CONFERMANO",
+    "contraddice": "LE NOTIZIE CONTRADDICONO",
+    "neutro": "NOTIZIE NEUTRE",
+    "nessuna notizia rilevante": "NESSUNA NOTIZIA RILEVANTE",
+}
 
 INK = "#111111"
 INK_SECONDARY = "#4a4a4a"
@@ -94,6 +102,27 @@ st.markdown(
     .level-label {{ font-size: 0.75rem; color: {INK_SECONDARY}; text-transform: uppercase; letter-spacing: 0.5px; }}
     .level-value {{ font-size: 1.15rem; font-weight: 700; }}
 
+    .news-box {{
+        margin-top: 16px;
+        padding: 14px 16px;
+        border: 1px solid #cfcabf;
+        background-color: #fbfaf7;
+    }}
+    .news-box.conferma {{ border-left: 3px solid {GOOD}; }}
+    .news-box.contraddice {{ border-left: 3px solid {CRITICAL}; }}
+    .news-box.neutro, .news-box.default {{ border-left: 3px solid #9a948a; }}
+    .news-verdict {{
+        font-weight: 700;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }}
+    .news-verdict.conferma {{ color: {GOOD}; }}
+    .news-verdict.contraddice {{ color: {CRITICAL}; }}
+    .news-sources {{ font-size: 0.85rem; color: {INK_SECONDARY}; margin-top: 6px; }}
+    .news-sources a {{ color: {BRAND}; }}
+    .news-stale {{ font-size: 0.78rem; color: {INK_SECONDARY}; font-style: italic; }}
+
     /* Best-effort: move Plotly's toolbar to the left edge of each chart */
     .js-plotly-plot .plotly .modebar-container {{
         left: 0 !important;
@@ -124,7 +153,47 @@ st.caption(
 )
 
 
-def _signal_card(r: dict) -> None:
+def _load_news_analysis() -> dict:
+    if not NEWS_PATH.exists():
+        return {}
+    try:
+        return json.loads(NEWS_PATH.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _render_news(ticker: str, news_data: dict) -> None:
+    entry = (news_data.get("tickers") or {}).get(ticker)
+    if not entry:
+        return
+    verdict = entry.get("verdict", "neutro")
+    css_class = verdict if verdict in ("conferma", "contraddice", "neutro") else "default"
+    label = VERDICT_LABELS.get(verdict, verdict.upper())
+
+    st.markdown(f'<div class="news-box {css_class}">', unsafe_allow_html=True)
+    st.markdown(f'<div class="news-verdict {css_class}">{label}</div>', unsafe_allow_html=True)
+    st.markdown(entry.get("summary", ""))
+    sources = entry.get("sources") or []
+    if sources:
+        links = " &nbsp;·&nbsp; ".join(
+            f'<a href="{s.get("url", "#")}" target="_blank">{s.get("publisher") or s.get("title") or "fonte"}</a>'
+            for s in sources
+        )
+        st.markdown(f'<div class="news-sources">Fonti: {links}</div>', unsafe_allow_html=True)
+    generated_at = news_data.get("generated_at")
+    if generated_at:
+        try:
+            dt = datetime.fromisoformat(generated_at)
+            st.markdown(
+                f'<div class="news-stale">Notizie lette il {dt.strftime("%d/%m/%Y %H:%M UTC")}</div>',
+                unsafe_allow_html=True,
+            )
+        except ValueError:
+            pass
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _signal_card(r: dict, news_data: dict) -> None:
     kind = r["signal"].lower()
     label = "ACQUISTO" if r["signal"] == "BUY" else "VENDITA"
 
@@ -156,6 +225,8 @@ def _signal_card(r: dict) -> None:
     for paragraph in narrative:
         st.markdown(paragraph)
 
+    _render_news(r["ticker"], news_data)
+
     charts = r.get("charts") or ({"1G": r["chart"]} if r.get("chart") else {})
     if charts:
         available = [tf for tf in TIMEFRAME_ORDER if tf in charts]
@@ -180,6 +251,7 @@ with tab_signals:
         st.info("Nessuno screening ancora eseguito.")
     else:
         data = json.loads(CACHE_PATH.read_text())
+        news_data = _load_news_analysis()
         generated_at = datetime.fromisoformat(data["generated_at"])
         st.caption(
             f"Ultimo aggiornamento: {generated_at.strftime('%d/%m/%Y %H:%M UTC')} — "
@@ -199,11 +271,11 @@ with tab_signals:
             if buys:
                 st.markdown(f'<div class="section-rule buy">Acquisto ({len(buys)})</div>', unsafe_allow_html=True)
                 for r in sorted(buys, key=lambda r: r["target_upside_pct"] or 0, reverse=True):
-                    _signal_card(r)
+                    _signal_card(r, news_data)
             if sells:
                 st.markdown(f'<div class="section-rule sell">Vendita ({len(sells)})</div>', unsafe_allow_html=True)
                 for r in sells:
-                    _signal_card(r)
+                    _signal_card(r, news_data)
 
 with tab_manual:
     st.caption("Analizza un titolo specifico su richiesta (non filtrato per segnale).")
@@ -236,6 +308,7 @@ with tab_manual:
             )
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
+        manual_news_data = _load_news_analysis()
         for r in results:
             if r.signal and r.charts:
                 _signal_card(
@@ -244,5 +317,6 @@ with tab_manual:
                         "signal_reasons": r.signal_reasons, "narrative": r.narrative,
                         "entry_price": r.entry_price, "stop_loss": r.stop_loss,
                         "take_profit": r.take_profit, "charts": r.charts,
-                    }
+                    },
+                    manual_news_data,
                 )
