@@ -52,6 +52,8 @@ class TickerAnalysis:
     piotroski_evaluable: int | None = None
     altman_variant: str = ""
     sector_category: str = ""
+    # Raw Yahoo fields read by the "Analisi Azionaria" app to build sector peer groups
+    peer_info: dict = field(default_factory=dict)
     signal: str | None = None
     signal_reasons: list = field(default_factory=list)
     narrative: list = field(default_factory=list)
@@ -162,6 +164,21 @@ def _market_value_at_fye(history, annual) -> float | None:
     return float(before.iloc[-1]) * factor * float(shares)
 
 
+PEER_INFO_FIELDS = (
+    "sector", "industry", "marketCap", "currentPrice", "regularMarketPrice", "trailingPE", "forwardPE",
+    "enterpriseToEbitda", "enterpriseToRevenue", "priceToBook", "trailingPegRatio",
+    "dividendRate", "trailingAnnualDividendYield", "currency", "financialCurrency",
+)
+
+def _peer_info(info: dict, annual) -> dict:
+    out = {k: info.get(k) for k in PEER_INFO_FIELDS if info.get(k) is not None}
+    # free cash flow defined as operating cash flow - capex of the last annual report,
+    # the same definition the analysis app uses (Yahoo's own "freeCashflow" differs)
+    if not annual.empty and annual["fcf"].notna().iloc[-1]:
+        out["fcfAnnual"] = float(annual["fcf"].iloc[-1])
+    return out
+
+
 RETRYABLE_MARKERS = ("Invalid Crumb", "Too Many Requests", "429", "401")
 
 
@@ -240,6 +257,7 @@ def _analyze_ticker_once(ticker: str) -> TickerAnalysis:
             piotroski_evaluable=sum(1 for c in piotroski.components if c["Esito"] != "N/D") or None,
             altman_variant=altman.variant,
             sector_category=sector.category,
+            peer_info=_peer_info(info, annual),
         )
 
         signal = classify_signal(ta, history, rsi_series, macd_df, stoch)

@@ -27,9 +27,9 @@ FLOW_FIELDS = [
 INSTANT_FIELDS = [
     "total_assets", "current_assets", "current_liabilities", "total_liabilities",
     "equity", "retained_earnings", "receivables", "net_ppe", "long_term_debt",
-    "total_debt", "cash", "inventory", "shares_outstanding", "tangible_book",
+    "total_debt", "cash", "short_term_investments", "inventory", "shares_outstanding", "tangible_book",
 ]
-DERIVED_FIELDS = ["working_capital"]
+DERIVED_FIELDS = ["working_capital", "ebitda", "fcf"]
 FIELDS = FLOW_FIELDS + INSTANT_FIELDS + DERIVED_FIELDS
 
 OUTFLOW_FIELDS = ("capex", "buyback", "dividends_paid")
@@ -47,6 +47,8 @@ FIELD_LABELS = {
     "equity": "Patrimonio netto", "retained_earnings": "Utili non distribuiti",
     "receivables": "Crediti commerciali", "net_ppe": "Immobilizzazioni materiali nette",
     "long_term_debt": "Debito a lungo termine", "total_debt": "Debito totale", "cash": "Cassa",
+    "short_term_investments": "Investimenti a breve termine", "ebitda": "EBITDA",
+    "fcf": "Free cash flow (cassa operativa - capex)",
     "inventory": "Magazzino", "shares_outstanding": "Azioni in circolazione",
     "tangible_book": "Patrimonio tangibile", "working_capital": "Capitale circolante",
 }
@@ -79,6 +81,8 @@ def finalize(df: pd.DataFrame) -> pd.DataFrame:
     df["gross_profit"] = df["gross_profit"].fillna(df["revenue"] - df["cost_of_revenue"])
     df["ebit"] = df["ebit"].fillna(df["pretax_income"] + df["interest_expense"]).fillna(df["operating_income"])
     df["working_capital"] = df["current_assets"] - df["current_liabilities"]
+    df["ebitda"] = df["ebit"] + df["d_and_a"]
+    df["fcf"] = df["ocf"] - df["capex"]
     df = df[FIELDS + ["filed"]]
     df.index = pd.to_datetime(df.index)
     return df.sort_index()
@@ -114,6 +118,7 @@ YAHOO_ROWS = {
     "long_term_debt": ["Long Term Debt"],
     "total_debt": ["Total Debt"],
     "cash": ["Cash And Cash Equivalents"],
+    "short_term_investments": ["Other Short Term Investments"],
     "inventory": ["Inventory"],
     "shares_outstanding": ["Ordinary Shares Number", "Share Issued"],
     "tangible_book": ["Tangible Book Value"],
