@@ -53,7 +53,8 @@ def calculate_stochastic(
     recent range rather than waiting for two averages to cross."""
     lowest_low = low.rolling(k_period).min()
     highest_high = high.rolling(k_period).max()
-    k = 100 * (close - lowest_low) / (highest_high - lowest_low)
+    price_range = (highest_high - lowest_low).replace(0, float("nan"))  # flat range (e.g. halted stock)
+    k = 100 * (close - lowest_low) / price_range
     d = k.rolling(d_period).mean()
     return pd.DataFrame({"k": k, "d": d})
 
@@ -66,20 +67,22 @@ def calculate_obv(close: pd.Series, volume: pd.Series) -> pd.Series:
     return (direction * volume).cumsum()
 
 
-def _local_extrema(series: pd.Series, order: int, kind: str) -> list:
-    """Indices where `series` is a local min/max within a +/-order window."""
-    indices = []
-    values = series.values
+def find_pivots(values, order: int, kind: str) -> list:
+    """Indices i that are a strict swing low/high: lower (higher) than the `order`
+    bars before it and not exceeded by the `order` bars after it. A pivot at bar i
+    is therefore only *confirmed* at bar i + order - the last `order` bars never pivot."""
+    pivots = []
     for i in range(order, len(values) - order):
-        window = values[i - order : i + order + 1]
-        if kind == "min" and values[i] == window.min():
-            indices.append(i)
-        elif kind == "max" and values[i] == window.max():
-            indices.append(i)
-    return indices
+        left, right = values[i - order:i], values[i + 1:i + order + 1]
+        if kind == "min" and values[i] < left.min() and values[i] <= right.min():
+            pivots.append(i)
+        elif kind == "max" and values[i] > left.max() and values[i] >= right.max():
+            pivots.append(i)
+    return pivots
 
 
-def detect_rsi_divergence(close: pd.Series, rsi: pd.Series, lookback: int = 40, order: int = 3) -> dict | None:
+def detect_rsi_divergence(close: pd.Series, rsi: pd.Series, lookback: int = 60, order: int = 3,
+                          max_age: int = 5) -> dict | None:
     """Compare the two most recent swing lows/highs in price vs. RSI to catch a
     reversal *before* it shows up as a moving-average crossover:
 
@@ -87,36 +90,40 @@ def detect_rsi_divergence(close: pd.Series, rsi: pd.Series, lookback: int = 40, 
       (selling pressure is fading even though price hasn't turned yet).
     - Bearish divergence: price makes a higher high, but RSI makes a lower high
       (buying pressure is fading even though price is still rising).
-    """
-    recent_close = close.tail(lookback).reset_index(drop=True)
-    recent_rsi = rsi.tail(lookback).reset_index(drop=True)
-    if recent_close.isna().any() or recent_rsi.isna().any() or len(recent_close) < lookback:
-        return None
 
-    minima = _local_extrema(recent_close, order, "min")
+    Only uses the bars it receives (no look-ahead), and only reports a divergence
+    whose second pivot was confirmed at most `max_age` bars ago - an old divergence
+    is no longer a signal.
+    """
+    recent_close = close.tail(lookback)
+    recent_rsi = rsi.tail(lookback)
+    if len(recent_close) < 2 * order + 2 or recent_close.isna().any() or recent_rsi.isna().any():
+        return None
+    cv = recent_close.to_numpy(dtype=float)
+    rv = recent_rsi.to_numpy(dtype=float)
+    last = len(cv) - 1
+
+    found = []
+    minima = find_pivots(cv, order, "min")
     if len(minima) >= 2:
         i1, i2 = minima[-2], minima[-1]
-        if recent_close[i2] < recent_close[i1] and recent_rsi[i2] > recent_rsi[i1]:
-            return {
+        if cv[i2] < cv[i1] and rv[i2] > rv[i1] and last - (i2 + order) <= max_age:
+            found.append({
                 "type": "bullish",
-                "price_low_1": float(recent_close[i1]),
-                "price_low_2": float(recent_close[i2]),
-                "rsi_low_1": float(recent_rsi[i1]),
-                "rsi_low_2": float(recent_rsi[i2]),
-                "bars_ago": lookback - 1 - i2,
-            }
-
-    maxima = _local_extrema(recent_close, order, "max")
+                "price_low_1": float(cv[i1]), "price_low_2": float(cv[i2]),
+                "rsi_low_1": float(rv[i1]), "rsi_low_2": float(rv[i2]),
+                "bars_ago": last - (i2 + order),
+            })
+    maxima = find_pivots(cv, order, "max")
     if len(maxima) >= 2:
         i1, i2 = maxima[-2], maxima[-1]
-        if recent_close[i2] > recent_close[i1] and recent_rsi[i2] < recent_rsi[i1]:
-            return {
+        if cv[i2] > cv[i1] and rv[i2] < rv[i1] and last - (i2 + order) <= max_age:
+            found.append({
                 "type": "bearish",
-                "price_high_1": float(recent_close[i1]),
-                "price_high_2": float(recent_close[i2]),
-                "rsi_high_1": float(recent_rsi[i1]),
-                "rsi_high_2": float(recent_rsi[i2]),
-                "bars_ago": lookback - 1 - i2,
-            }
-
-    return None
+                "price_high_1": float(cv[i1]), "price_high_2": float(cv[i2]),
+                "rsi_high_1": float(rv[i1]), "rsi_high_2": float(rv[i2]),
+                "bars_ago": last - (i2 + order),
+            })
+    if not found:
+        return None
+    return min(found, key=lambda d: d["bars_ago"])  # bars_ago = sessions since confirmation

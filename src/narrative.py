@@ -41,11 +41,15 @@ def build_narrative(
     direction_word = "rialzista" if signal_kind == "BUY" else "ribassista"
 
     # 1. Opening
+    fundamentals_clause = (
+        "e il bilancio della società supera i filtri minimi di qualità richiesti prima che un segnale venga mostrato"
+        if signal_kind == "BUY"
+        else "e almeno un indicatore fondamentale segnala una debolezza (descritta più sotto)"
+    )
     p.append(
         f"Il sistema ha generato un segnale di {verb} su {ta.name or ta.ticker} ({ta.ticker}) perché tre "
         f"indicatori tecnici pensati per anticipare il movimento (non per confermarlo a cose fatte, come fa "
-        f"il solo MACD) puntano tutti nella stessa direzione {direction_word}, e il bilancio della società "
-        f"supera i filtri minimi di qualità richiesti prima che un segnale venga mostrato."
+        f"il solo MACD) puntano tutti nella stessa direzione {direction_word}, {fundamentals_clause}."
     )
 
     # 2. Technical detail (RSI divergence)
@@ -153,27 +157,52 @@ def build_narrative(
     if div_yield:
         p.append(f"Il titolo distribuisce un dividendo con rendimento del {_pct_already(div_yield)}.")
 
-    # 8. Quality scores, explained
-    p.append(
-        f"Punteggio Piotroski F: {ta.piotroski_f}/9 — misura la solidità fondamentale su nove criteri "
-        f"(redditività, flusso di cassa, leva finanziaria, liquidità ed efficienza); sopra 7 indica un "
-        f"bilancio strutturalmente solido, non solo un buon momento di mercato."
-    )
-    p.append(
-        f"Altman Z-Score: {_num(ta.altman_z)} (zona {ta.altman_zone.lower()}) — stima il rischio di "
-        f"insolvenza combinando liquidità, redditività e leva; valori sopra 2,99 indicano un'azienda "
-        f"finanziariamente solida nel breve-medio termine."
-    )
-    p.append(
-        f"Beneish M-Score: {_num(ta.beneish_m)} ({ta.beneish_flag.lower()}) — non rileva segnali statistici "
-        f"tipici della manipolazione contabile (crescita anomala dei crediti, margini o accantonamenti "
-        f"fuori pattern)."
-    )
+    # 8. Quality scores, explained (each one says plainly when it couldn't be computed)
+    if ta.piotroski_f is None:
+        p.append("Punteggio Piotroski F: non calcolabile per dati di bilancio mancanti.")
+    else:
+        evaluable = ta.piotroski_evaluable or 9
+        partial = f" (solo {evaluable} criteri su 9 valutabili per dati mancanti)" if evaluable < 9 else ""
+        p.append(
+            f"Punteggio Piotroski F: {ta.piotroski_f}/9{partial} — misura la solidità fondamentale su nove "
+            f"criteri (redditività, flusso di cassa, leva finanziaria, liquidità ed efficienza); 7 o più indica "
+            f"un bilancio strutturalmente solido, 3 o meno un bilancio debole."
+        )
+    if ta.altman_zone == "Non applicabile":
+        p.append("Altman Z-Score: non applicabile a banche, assicurazioni e intermediari finanziari.")
+    elif ta.altman_z is None:
+        p.append("Altman Z-Score: non calcolabile per dati di bilancio mancanti.")
+    else:
+        if "Z''" in (ta.altman_variant or ""):
+            thresholds = "versione Z'' per aziende non manifatturiere: sotto 1,10 distress, sopra 2,60 zona sicura"
+        else:
+            thresholds = "versione originale per aziende manifatturiere: sotto 1,81 distress, sopra 2,99 zona sicura"
+        p.append(
+            f"Altman Z-Score: {_num(ta.altman_z)} (zona {ta.altman_zone.lower()}; {thresholds}) — stima il "
+            f"rischio di insolvenza combinando liquidità, redditività e leva."
+        )
+    if ta.beneish_flag == "Possibile manipolazione":
+        p.append(
+            f"Beneish M-Score: {_num(ta.beneish_m)}, sopra la soglia di -1,78 — il profilo contabile "
+            f"(crediti, margini, accantonamenti, crescita) somiglia statisticamente a quello delle società che "
+            f"hanno manipolato i conti. È un campanello d'allarme, non una prova: le società in fortissima "
+            f"crescita possono superare la soglia senza irregolarità."
+        )
+    elif ta.beneish_flag == "Nessun segnale":
+        p.append(
+            f"Beneish M-Score: {_num(ta.beneish_m)}, sotto la soglia di -1,78 — non rileva segnali statistici "
+            f"tipici della manipolazione contabile (crescita anomala dei crediti, margini o accantonamenti "
+            f"fuori pattern)."
+        )
+    elif ta.beneish_flag == "Non applicabile":
+        p.append("Beneish M-Score: non applicabile alle società finanziarie.")
+    else:
+        p.append("Beneish M-Score: non calcolabile per dati di bilancio mancanti.")
 
     # 9. Analyst consensus
     n_analysts = fundamentals.get("numberOfAnalystOpinions")
     low, high = fundamentals.get("targetLowPrice"), fundamentals.get("targetHighPrice")
-    if n_analysts:
+    if n_analysts and fundamentals.get("targetMeanPrice") and ta.target_upside_pct is not None:
         range_txt = f", range {low:.2f}-{high:.2f}" if low and high else ""
         p.append(
             f"{n_analysts} analisti coprono il titolo con un target price medio di "

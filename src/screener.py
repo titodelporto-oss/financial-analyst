@@ -16,14 +16,9 @@ from dataclasses import dataclass, field
 import yfinance as yf
 
 from .data import fetch_fundamentals, fetch_price_history
-from .fundamentals import (
-    FinancialStatements,
-    altman_zone,
-    beneish_flag,
-    calculate_altman_z,
-    calculate_beneish_m,
-    calculate_piotroski_f,
-)
+from .models import altman_z, beneish_m, piotroski_f
+from .sector import classify
+from .statements import from_yahoo
 from .indicators import (
     calculate_bollinger_bands,
     calculate_macd,
@@ -54,6 +49,9 @@ class TickerAnalysis:
     beneish_flag: str
     score: float
     error: str | None = None
+    piotroski_evaluable: int | None = None
+    altman_variant: str = ""
+    sector_category: str = ""
     signal: str | None = None
     signal_reasons: list = field(default_factory=list)
     narrative: list = field(default_factory=list)
@@ -116,14 +114,13 @@ def _fair_value_upside_and_score(current_price, target_mean_price) -> tuple[floa
     return upside_pct, 0
 
 
-def _altman_score(z: float | None) -> float:
-    if z is None:
-        return 0
-    if z > 2.99:
+def _altman_score(zone: str) -> float:
+    """Uses the zone, whose thresholds depend on the Altman variant (original vs Z'')."""
+    if zone == "Sicura":
         return 1
-    if z >= 1.81:
-        return 0
-    return -2
+    if zone == "Distress":
+        return -2
+    return 0
 
 
 def _piotroski_score(f: int | None) -> float:
@@ -136,10 +133,33 @@ def _piotroski_score(f: int | None) -> float:
     return 0
 
 
-def _beneish_score(m: float | None) -> float:
-    if m is None:
-        return 0
-    return -2 if m > -1.78 else 0
+def _beneish_score(flag: str) -> float:
+    return -2 if flag == "Possibile manipolazione" else 0
+
+
+def _market_value_at_fye(history, annual) -> float | None:
+    """Market cap on the last fiscal year end: price then x shares then.
+
+    Yahoo's Close is retroactively divided by later stock splits while the share
+    count in the old balance sheet is not, so later splits are multiplied back."""
+    if annual.empty or history.empty:
+        return None
+    fye = annual.index[-1]
+    shares = annual["shares_outstanding"].iloc[-1]
+    if shares != shares:  # NaN
+        return None
+    idx = history.index
+    when = fye.tz_localize(idx.tz) if idx.tz is not None else fye
+    before = history.loc[:when, "Close"].dropna()
+    if before.empty or (when - before.index[-1]).days > 7:
+        return None
+    factor = 1.0
+    if "Stock Splits" in history.columns:
+        later = history.loc[history.index > before.index[-1], "Stock Splits"]
+        later = later[later > 0]
+        if not later.empty:
+            factor = float(later.prod())
+    return float(before.iloc[-1]) * factor * float(shares)
 
 
 RETRYABLE_MARKERS = ("Invalid Crumb", "Too Many Requests", "429", "401")
@@ -179,10 +199,12 @@ def _analyze_ticker_once(ticker: str) -> TickerAnalysis:
         fundamentals = fetch_fundamentals(ticker_obj, info)
         target_mean_price = fundamentals.get("targetMeanPrice")
 
-        fs = FinancialStatements(ticker_obj, info)
-        z = calculate_altman_z(fs)
-        f_score = calculate_piotroski_f(fs)
-        m_score = calculate_beneish_m(fs)
+        annual = from_yahoo(ticker_obj.balance_sheet, ticker_obj.income_stmt, ticker_obj.cashflow)
+        sector = classify(None, None, info.get("sector"), info.get("industry"))
+        altman = altman_z(annual, sector, _market_value_at_fye(history, annual))
+        piotroski = piotroski_f(annual, sector)
+        beneish = beneish_m(annual, sector)
+        f_score = int(piotroski.value) if piotroski.available else None
 
         rsi_zone, rsi_score = _rsi_zone_and_score(latest_rsi)
         macd_signal, macd_score = _macd_signal_and_score(macd_df["histogram"])
@@ -194,27 +216,30 @@ def _analyze_ticker_once(ticker: str) -> TickerAnalysis:
             + macd_score
             + volume_score
             + fair_value_score
-            + _altman_score(z)
+            + _altman_score(altman.label)
             + _piotroski_score(f_score)
-            + _beneish_score(m_score)
+            + _beneish_score(beneish.label)
         )
 
         ta = TickerAnalysis(
             ticker=ticker,
             name=fundamentals.get("shortName"),
             price=current_price,
-            market_cap=fs.info.get("marketCap"),
+            market_cap=info.get("marketCap"),
             rsi=float(latest_rsi) if latest_rsi is not None else None,
             rsi_zone=rsi_zone,
             macd_signal=macd_signal,
             volume_ratio=float(latest_vol_ratio) if latest_vol_ratio is not None else None,
             target_upside_pct=upside_pct,
-            altman_z=z,
-            altman_zone=altman_zone(z),
+            altman_z=altman.value,
+            altman_zone=altman.label,
             piotroski_f=f_score,
-            beneish_m=m_score,
-            beneish_flag=beneish_flag(m_score),
+            beneish_m=beneish.value,
+            beneish_flag=beneish.label,
             score=total_score,
+            piotroski_evaluable=sum(1 for c in piotroski.components if c["Esito"] != "N/D") or None,
+            altman_variant=altman.variant,
+            sector_category=sector.category,
         )
 
         signal = classify_signal(ta, history, rsi_series, macd_df, stoch)

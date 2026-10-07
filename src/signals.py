@@ -1,11 +1,12 @@
 """Turn raw indicators into a small number of high-conviction BUY/SELL signals.
 
 Philosophy: MACD's moving-average crossover confirms a move only after it has
-already started. To catch a move earlier we require at least 2 of 3 *leading*
-technical conditions (RSI divergence, an early stochastic turn, or MACD momentum
-already accelerating before the crossover) - AND a fundamentals quality gate, so a
-signal never fires on pure momentum with a rotten balance sheet underneath. Most
-tickers will trigger nothing at all: that's intentional, not a bug.
+already started. To catch a move earlier we require all 3 *leading* technical
+conditions (RSI divergence, an early stochastic turn, and MACD momentum already
+accelerating before the crossover) - AND a fundamentals quality gate, so a signal
+never fires on pure momentum with a rotten balance sheet underneath. A metric that
+could not be computed ("N/D") never counts as passing the gate. Most tickers will
+trigger nothing at all: that's intentional, not a bug.
 """
 
 from __future__ import annotations
@@ -58,12 +59,18 @@ def _macd_momentum_direction(histogram: pd.Series, bars: int = 3) -> str | None:
     return None
 
 
+MIN_PIOTROSKI_EVALUABLE = 8  # at most one of the 9 criteria may be N/D
+
+
 def _fundamentals_buy_gate(ta) -> bool:
+    """Every check must be positively verified: missing data blocks the signal.
+    Financials (Altman/Beneish not applicable) therefore never pass this gate."""
     return (
         ta.piotroski_f is not None
         and ta.piotroski_f >= 7
-        and ta.altman_zone != "Distress"
-        and ta.beneish_flag != "Possibile manipolazione"
+        and (ta.piotroski_evaluable or 0) >= MIN_PIOTROSKI_EVALUABLE
+        and ta.altman_zone in ("Sicura", "Grigia")
+        and ta.beneish_flag == "Nessun segnale"
         and ta.target_upside_pct is not None
         and ta.target_upside_pct > 10
     )
@@ -111,8 +118,8 @@ def classify_signal(ta, history: pd.DataFrame, rsi: pd.Series, macd_df: pd.DataF
 
     if len(buy_reasons) >= MIN_TECHNICAL_CONFIRMATIONS and _fundamentals_buy_gate(ta):
         buy_reasons.append(
-            f"Bilancio solido: Piotroski F {ta.piotroski_f}/9, Altman Z in zona {ta.altman_zone.lower()}, "
-            f"nessun segnale Beneish di manipolazione."
+            f"Bilancio solido: Piotroski F {ta.piotroski_f}/9 ({ta.piotroski_evaluable} criteri valutabili), "
+            f"Altman Z in zona {ta.altman_zone.lower()}, nessun segnale Beneish di manipolazione."
         )
         buy_reasons.append(
             f"Il titolo tratta {ta.target_upside_pct:.0f}% sotto il target medio degli analisti "

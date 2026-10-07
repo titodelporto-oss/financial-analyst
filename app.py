@@ -301,7 +301,12 @@ with tab_manual:
                     "Zona RSI": r.rsi_zone,
                     "Segnale MACD": r.macd_signal,
                     "Altman Z": round(r.altman_z, 2) if r.altman_z is not None else None,
-                    "Piotroski F": r.piotroski_f,
+                    "Zona Altman": r.altman_zone,
+                    "Piotroski F": (
+                        f"{r.piotroski_f}/9" + (f" ({r.piotroski_evaluable} valutabili)" if (r.piotroski_evaluable or 9) < 9 else "")
+                        if r.piotroski_f is not None else "N/D"
+                    ),
+                    "Beneish": r.beneish_flag,
                     "Upside target %": round(r.target_upside_pct, 1) if r.target_upside_pct is not None else None,
                     "Errore": r.error or "",
                 }

@@ -10,7 +10,9 @@ import yfinance as yf
 
 
 def fetch_price_history(ticker_obj: yf.Ticker, period: str = "2y", interval: str = "1d") -> pd.DataFrame:
-    df = ticker_obj.history(period=period, interval=interval)
+    # auto_adjust=False: Close is split-adjusted only (the price actually quoted, the
+    # standard for charting), needed to rebuild market cap at a past fiscal year end
+    df = ticker_obj.history(period=period, interval=interval, auto_adjust=False)
     if df.empty:
         return df
     if isinstance(df.columns, pd.MultiIndex):
