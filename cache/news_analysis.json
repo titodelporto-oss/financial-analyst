@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-10-07T13:46:16Z",
+  "tickers": {
+    "TTWO": {
+      "verdict": "conferma",
+      "summary": "Il titolo ha beneficiato della prima anteprima ufficiale di GTA 6, con nuove immagini di gameplay e lancio confermato a novembre, fattore che ha sostenuto il prezzo. Gli analisti mantengono un rating di consenso \"Strong Buy\" con target price medio a 12 mesi di $286,89 (+21,9% circa), molto in linea con il target di $286,44 usato dal sistema. Da segnalare che dopo la trimestrale del 2 febbraio il titolo aveva perso il 4,4% nonostante ricavi in crescita del 24,9% a $1,7 miliardi, a causa di una guidance EBITDA annuale inferiore alle attese. Nel complesso il newsflow recente è coerente con l'impostazione rialzista del segnale, pur con un elemento di cautela sulla guidance.",
+      "sources": [
+        {"title": "Why Take-Two Interactive Stock Surged Today", "url": "https://www.fool.com/investing/2025/04/09/why-take-two-interactive-stock-surged-today", "publisher": "The Motley Fool", "date": null},
+        {"title": "Take-Two Interactive Stock: Is Wall Street Bullish or Bearish?", "url": "https://finance.yahoo.com/news/two-interactive-stock-wall-street-045524927.html", "publisher": "Yahoo Finance", "date": null},
+        {"title": "Take-Two Interactive Software, Inc. (TTWO)", "url": "https://stockanalysis.com/stocks/TTWO", "publisher": "StockAnalysis.com", "date": null}
+      ]
+    },
+    "FSLR": {
+      "verdict": "conferma",
+      "summary": "Jefferies ha alzato il target price su First Solar a $194 da $192 confermando il rating \"Buy\", movimento che ha spinto il titolo a +5,1% in una seduta; anche RBC Capital ha innalzato il target a $200 citando una possibile ripresa della domanda. Il consenso degli analisti resta \"Buy\" con target medio a 12 mesi di $251,26 (+10,3%), inferiore però al target di $275,87 stimato dal sistema. Va segnalato un elemento di cautela: Jefferies in un'altra nota ha tagliato il target da $271 a $266 anticipando una possibile sottoperformance nel terzo trimestre per volumi più bassi, in un contesto di incertezza su tariffe e Inflation Reduction Act che dovrebbe però chiarirsi nel 2026. Il quadro complessivo resta a supporto del segnale, pur con view di breve termine miste tra i broker.",
+      "sources": [
+        {"title": "Why Is First Solar (FSLR) Stock Rocketing Higher Today", "url": "https://tw.tradingview.com/news/stockstory%3Aed884deaa094b%3A0-why-is-first-solar-fslr-stock-rocketing-higher-today", "publisher": "TradingView / Stock Story", "date": null},
+        {"title": "Why First Solar (FSLR) Shares Are Plunging Today", "url": "https://arc-dev.theglobeandmail.com/investing/markets/stocks/FSLR/pressreleases/28982539/why-first-solar-fslr-shares-are-plunging-today", "publisher": "The Globe and Mail", "date": null},
+        {"title": "First Solar, Inc. (FSLR)", "url": "https://stockanalysis.com/stocks/FSLR/", "publisher": "StockAnalysis.com", "date": null}
+      ]
+    }
+  }
+}
