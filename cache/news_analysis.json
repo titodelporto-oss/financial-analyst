@@ -1,14 +1,4 @@
 {
-  "generated_at": "2026-10-08T22:40:27Z",
-  "tickers": {
-    "ILMN": {
-      "verdict": "nessuna notizia rilevante",
-      "summary": "Le notizie più recenti reperite su Illumina risalgono a fine giugno 2026, quindi non coprono i mesi immediatamente precedenti a oggi. A quella data il titolo chiudeva a 177,65 USD (+1,46%), ben sopra il target medio degli analisti di 143,56 USD con consenso \"Hold\", e gli insider avevano venduto circa 155,7 milioni di dollari di azioni negli ultimi tre mesi senza acquisti. A maggio 2026 Illumina aveva battuto le stime di utili e ricavi nel primo trimestre, con espansione dei margini e outlook 2026 rivisto al rialzo. Non emergono notizie decisive e recenti (luglio-ottobre 2026) che confermino o contraddicano chiaramente il segnale SELL; i dati disponibili sono contrastanti (valutazione sopra target e vendite insider vs. trimestrale positiva).",
-      "sources": [
-        {"title": "Illumina (ILMN) Jumps 24.8% on Earnings Beat", "url": "https://finance.yahoo.com/news/illumina-ilmn-jumps-24-8-184814623.html", "publisher": "Yahoo Finance", "date": "2025-02"},
-        {"title": "MarketBeat - ILMN Sustainability/Overview", "url": "https://www.marketbeat.com/stocks/NASDAQ/ILMN/sustainability", "publisher": "MarketBeat", "date": "2026-06-25"},
-        {"title": "ILMN Earnings: Illumina Stock Slips on Mixed Financial Results", "url": "https://www.nasdaq.com/articles/ilmn-earnings-illumina-stock-slips-mixed-financial-results", "publisher": "Nasdaq", "date": "2026"}
-      ]
-    }
-  }
+  "generated_at": "2026-10-09T22:40:34Z",
+  "tickers": {}
 }
