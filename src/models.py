@@ -244,6 +244,12 @@ BENEISH_DESCRIPTIONS = {
 }
 
 
+BENEISH_NA_WHY = {
+    "reit": "i suoi indici (crediti, margine lordo, attivo corrente) non descrivono un'attività immobiliare",
+    "utility": "le utility non pubblicano le spese generali (SG&A) né un margine lordo, che il modello richiede",
+}
+
+
 def beneish_m(annual: pd.DataFrame, sector: SectorInfo) -> ModelResult:
     res = ModelResult("Beneish M-Score", variant="Modello a 8 variabili (Beneish, 1999)")
     if sector.is_financial:
@@ -252,8 +258,8 @@ def beneish_m(annual: pd.DataFrame, sector: SectorInfo) -> ModelResult:
         return res
     if not profiles.get(sector.profile)["beneish"]:
         res.label = NOT_APPLICABLE
-        res.notes.append(f"Il Beneish M-Score è {profiles.na_reason(sector.profile)}: i suoi indici (crediti, "
-                         "margine lordo, attivo corrente) non descrivono un'attività immobiliare.")
+        why = BENEISH_NA_WHY.get(sector.profile, "")
+        res.notes.append(f"Il Beneish M-Score è {profiles.na_reason(sector.profile)}" + (f": {why}." if why else "."))
         return res
     if len(annual) < 2 or not consecutive(annual.index[-2], annual.index[-1]):
         res.missing.append("Servono due esercizi consecutivi")

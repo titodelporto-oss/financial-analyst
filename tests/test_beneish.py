@@ -69,12 +69,14 @@ def test_not_applicable_to_banks(bank):
     assert res.label == NOT_APPLICABLE and res.value is None
 
 
-def test_not_applicable_to_reits_but_applies_to_utilities(services):
+def test_not_applicable_to_reits_and_utilities(services):
     reit = SectorInfo("reit", "Yahoo Finance", "Real Estate / REIT - Residential")
     utility = SectorInfo("utility", "Yahoo Finance", "Utilities / Utilities - Regulated Electric")
     data = annual(dict(PREV, net_income=100, ocf=150))
     assert beneish_m(data, reit).label == NOT_APPLICABLE
-    assert beneish_m(data, utility).value == beneish_m(data, services).value
+    assert beneish_m(data, utility).label == NOT_APPLICABLE  # utilities do not report SG&A
+    assert "SG&A" in beneish_m(data, utility).notes[0]
+    assert beneish_m(data, services).label != NOT_APPLICABLE
 
 
 def test_growth_driven_flag_gets_explained(services):

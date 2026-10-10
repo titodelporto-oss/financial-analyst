@@ -83,11 +83,11 @@ def test_reits_and_utilities_pass_without_models_that_do_not_apply_to_them():
                 beneish_flag="Non applicabile", beneish_m=None, piotroski_f=6, piotroski_evaluable=7)
     assert _fundamentals_buy_gate(ta(**reit))
     assert "REIT" in _quality_reason(ta(**reit)) and "non applicabile" in _quality_reason(ta(**reit))
-    utility = dict(sector_category="utility", altman_zone="Non applicabile", altman_z=None)
+    utility = dict(sector_category="utility", altman_zone="Non applicabile", altman_z=None,
+                   beneish_flag="Non applicabile", beneish_m=None)
     assert _fundamentals_buy_gate(ta(**utility))
-    # Beneish still applies to utilities: missing or alarming, it blocks
-    assert not _fundamentals_buy_gate(ta(**utility, beneish_flag="N/D"))
-    assert not _fundamentals_buy_gate(ta(**utility, beneish_flag="Possibile manipolazione"))
+    # a real missing value still blocks, whatever the type of company
+    assert not _fundamentals_buy_gate(ta(**dict(utility, beneish_flag="N/D")))
     # weak balance sheet still blocks
     assert not _fundamentals_buy_gate(ta(**dict(reit, piotroski_f=4)))
 

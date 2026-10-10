@@ -12,7 +12,7 @@ from __future__ import annotations
 PROFILES = {
     "generic": {"label": "azienda industriale o di servizi", "altman": True, "beneish": True},
     "reit": {"label": "REIT", "altman": False, "beneish": False},
-    "utility": {"label": "utility regolata", "altman": False, "beneish": True},
+    "utility": {"label": "utility regolata", "altman": False, "beneish": False},  # no SG&A: Beneish always N/D
     "financial": {"label": "banca, assicurazione o intermediario finanziario", "altman": False, "beneish": False},
 }
 
