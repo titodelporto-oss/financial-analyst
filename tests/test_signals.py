@@ -6,13 +6,14 @@ import pandas as pd
 
 from src.indicators import detect_rsi_divergence
 from src.narrative import build_narrative
-from src.signals import _fundamentals_buy_gate
+from src.signals import _fundamentals_buy_gate, _quality_reason
 
 
 def ta(**overrides):
     base = dict(ticker="TEST", name="Test Inc.", piotroski_f=8, piotroski_evaluable=9, altman_zone="Sicura",
                 altman_z=3.5, altman_variant="Z originale", beneish_flag="Nessun segnale", beneish_m=-2.5,
-                target_upside_pct=20.0, volume_ratio=1.0, stop_loss=None)
+                target_upside_pct=20.0, volume_ratio=1.0, stop_loss=None,
+                sector_category="manufacturing")
     base.update(overrides)
     return SimpleNamespace(**base)
 
@@ -25,7 +26,7 @@ def test_missing_data_never_passes_the_gate():
     assert not _fundamentals_buy_gate(ta(altman_zone="N/D"))
     assert not _fundamentals_buy_gate(ta(beneish_flag="N/D"))
     assert not _fundamentals_buy_gate(ta(piotroski_f=None))
-    assert not _fundamentals_buy_gate(ta(piotroski_evaluable=7))  # 7/9 with 2 criteria unknown
+    assert not _fundamentals_buy_gate(ta(piotroski_evaluable=5, piotroski_f=5))  # too few criteria known
     assert not _fundamentals_buy_gate(ta(target_upside_pct=None))
 
 
@@ -65,3 +66,33 @@ def test_narrative_states_missing_scores_and_handles_missing_target():
     assert "Beneish M-Score: non calcolabile" in text
     assert "Altman Z-Score: non calcolabile" in text
     assert "non rileva segnali" not in text
+
+
+def test_piotroski_threshold_is_proportional_to_evaluable_criteria():
+    assert _fundamentals_buy_gate(ta(piotroski_f=7, piotroski_evaluable=9))
+    assert not _fundamentals_buy_gate(ta(piotroski_f=6, piotroski_evaluable=9))
+    assert not _fundamentals_buy_gate(ta(piotroski_f=6, piotroski_evaluable=8))  # 6/8 < 7/9
+    assert _fundamentals_buy_gate(ta(piotroski_f=6, piotroski_evaluable=7))  # 6/7 >= 7/9
+    assert not _fundamentals_buy_gate(ta(piotroski_f=5, piotroski_evaluable=7))
+    assert _fundamentals_buy_gate(ta(piotroski_f=5, piotroski_evaluable=6))
+    assert not _fundamentals_buy_gate(ta(piotroski_f=5, piotroski_evaluable=5))
+
+
+def test_reits_and_utilities_pass_without_models_that_do_not_apply_to_them():
+    reit = dict(sector_category="reit", altman_zone="Non applicabile", altman_z=None,
+                beneish_flag="Non applicabile", beneish_m=None, piotroski_f=6, piotroski_evaluable=7)
+    assert _fundamentals_buy_gate(ta(**reit))
+    assert "REIT" in _quality_reason(ta(**reit)) and "non applicabile" in _quality_reason(ta(**reit))
+    utility = dict(sector_category="utility", altman_zone="Non applicabile", altman_z=None)
+    assert _fundamentals_buy_gate(ta(**utility))
+    # Beneish still applies to utilities: missing or alarming, it blocks
+    assert not _fundamentals_buy_gate(ta(**utility, beneish_flag="N/D"))
+    assert not _fundamentals_buy_gate(ta(**utility, beneish_flag="Possibile manipolazione"))
+    # weak balance sheet still blocks
+    assert not _fundamentals_buy_gate(ta(**dict(reit, piotroski_f=4)))
+
+
+def test_not_applicable_does_not_let_other_companies_through():
+    assert not _fundamentals_buy_gate(ta(sector_category="bank", altman_zone="Non applicabile",
+                                         beneish_flag="Non applicabile"))
+    assert not _fundamentals_buy_gate(ta(sector_category="non_manufacturing", altman_zone="Non applicabile"))

@@ -11,7 +11,9 @@ from __future__ import annotations
 import pandas as pd
 
 from .signals import _macd_momentum_direction, _stochastic_cross
+from . import profiles
 from .indicators import detect_rsi_divergence
+from .sector import profile_of
 
 
 def _pct(x, digits: int = 1) -> str:
@@ -168,8 +170,9 @@ def build_narrative(
             f"criteri (redditività, flusso di cassa, leva finanziaria, liquidità ed efficienza); 7 o più indica "
             f"un bilancio strutturalmente solido, 3 o meno un bilancio debole."
         )
+    profile = profile_of(ta.sector_category)
     if ta.altman_zone == "Non applicabile":
-        p.append("Altman Z-Score: non applicabile a banche, assicurazioni e intermediari finanziari.")
+        p.append(f"Altman Z-Score: {profiles.na_reason(profile)}.")
     elif ta.altman_z is None:
         p.append("Altman Z-Score: non calcolabile per dati di bilancio mancanti.")
     else:
@@ -195,7 +198,7 @@ def build_narrative(
             f"fuori pattern)."
         )
     elif ta.beneish_flag == "Non applicabile":
-        p.append("Beneish M-Score: non applicabile alle società finanziarie.")
+        p.append(f"Beneish M-Score: {profiles.na_reason(profile)}.")
     else:
         p.append("Beneish M-Score: non calcolabile per dati di bilancio mancanti.")
 

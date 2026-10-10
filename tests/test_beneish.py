@@ -9,6 +9,7 @@ When every index equals 1, the constant part is
 
 import pytest
 
+from src.sector import SectorInfo
 from src.models import NOT_APPLICABLE, beneish_m
 from tests.conftest import make_annual
 
@@ -66,6 +67,14 @@ def test_missing_item_gives_nd(services):
 def test_not_applicable_to_banks(bank):
     res = beneish_m(annual(dict(PREV, net_income=100, ocf=150)), bank)
     assert res.label == NOT_APPLICABLE and res.value is None
+
+
+def test_not_applicable_to_reits_but_applies_to_utilities(services):
+    reit = SectorInfo("reit", "Yahoo Finance", "Real Estate / REIT - Residential")
+    utility = SectorInfo("utility", "Yahoo Finance", "Utilities / Utilities - Regulated Electric")
+    data = annual(dict(PREV, net_income=100, ocf=150))
+    assert beneish_m(data, reit).label == NOT_APPLICABLE
+    assert beneish_m(data, utility).value == beneish_m(data, services).value
 
 
 def test_growth_driven_flag_gets_explained(services):

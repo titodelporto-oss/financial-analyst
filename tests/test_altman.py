@@ -65,6 +65,13 @@ def test_not_applicable_to_insurers():
     assert altman_z(make_annual({"2024-12-31": BASE}), insurer).label == NOT_APPLICABLE
 
 
+@pytest.mark.parametrize("category", ["reit", "utility"])
+def test_not_applicable_to_reits_and_utilities(category):
+    res = altman_z(make_annual({"2024-12-31": BASE}), SectorInfo(category, "Yahoo Finance", "-"), 1000)
+    assert res.value is None and res.label == NOT_APPLICABLE
+    assert any("non adatto" in n for n in res.notes)
+
+
 def test_missing_market_value_is_nd_not_a_guess(manufacturer):
     res = altman_z(make_annual({"2024-12-31": BASE}), manufacturer, market_value_equity=None)
     assert res.value is None

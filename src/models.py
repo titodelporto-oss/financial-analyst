@@ -1,11 +1,11 @@
 """Accounting-quality and distress models, each returning all of its components.
 
 - Altman Z-Score: bankruptcy risk. Original Z for manufacturers, Z'' for everyone
-  else; not applicable to banks, insurers and other financials.
+  else; not applicable to financials, REITs and regulated utilities (src/profiles.py).
 - Piotroski F-Score: 9 binary tests of fundamental strength, year t vs year t-1.
   A criterion that can't be evaluated is reported as such (never as a fail).
 - Beneish M-Score: 8-variable probability-of-manipulation model, threshold -1.78;
-  not applicable to financials.
+  not applicable to financials and REITs.
 
 Inputs are the canonical annual frame from statements.py (one row per fiscal year,
 oldest -> newest). Missing inputs produce "N/D", never a guess.
@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
+from . import profiles
 from .sector import MANUFACTURING, UNKNOWN, SectorInfo
 from .statements import FIELD_LABELS, consecutive, value
 
@@ -80,6 +81,11 @@ def altman_z(annual: pd.DataFrame, sector: SectorInfo, market_value_equity: floa
         res.label = NOT_APPLICABLE
         res.notes.append(f"Il modello non è pensato per {sector.label.lower()}: il bilancio è fatto di attività "
                          "e passività finanziarie, quindi capitale circolante e leva hanno un altro significato.")
+        return res
+    if not profiles.get(sector.profile)["altman"]:
+        res.label = NOT_APPLICABLE
+        res.notes.append(f"L'Altman Z-Score è {profiles.na_reason(sector.profile)}: è stato stimato su aziende "
+                         "industriali, con capitale circolante e debito di natura diversa.")
         return res
     if annual.empty:
         res.missing.append("Bilanci annuali")
@@ -243,6 +249,11 @@ def beneish_m(annual: pd.DataFrame, sector: SectorInfo) -> ModelResult:
     if sector.is_financial:
         res.label = NOT_APPLICABLE
         res.notes.append(f"Il modello non è pensato per {sector.label.lower()}.")
+        return res
+    if not profiles.get(sector.profile)["beneish"]:
+        res.label = NOT_APPLICABLE
+        res.notes.append(f"Il Beneish M-Score è {profiles.na_reason(sector.profile)}: i suoi indici (crediti, "
+                         "margine lordo, attivo corrente) non descrivono un'attività immobiliare.")
         return res
     if len(annual) < 2 or not consecutive(annual.index[-2], annual.index[-1]):
         res.missing.append("Servono due esercizi consecutivi")

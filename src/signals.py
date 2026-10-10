@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 from .indicators import detect_rsi_divergence
+from . import profiles
+from .sector import profile_of
 
 MIN_TECHNICAL_CONFIRMATIONS = 3
 
@@ -59,21 +61,46 @@ def _macd_momentum_direction(histogram: pd.Series, bars: int = 3) -> str | None:
     return None
 
 
-MIN_PIOTROSKI_EVALUABLE = 8  # at most one of the 9 criteria may be N/D
+# Piotroski: 7 criteria out of 9, scaled to those that exist for this kind of company (a REIT has no
+# gross margin or current ratio), as in PATTY's backtest. At least 6 of the 9 must be evaluable.
+MIN_PIOTROSKI_EVALUABLE = 6
+NOT_APPLICABLE = "Non applicabile"
+
+
+def _piotroski_strong(ta) -> bool:
+    evaluable = ta.piotroski_evaluable or 0
+    return (ta.piotroski_f is not None and evaluable >= MIN_PIOTROSKI_EVALUABLE
+            and ta.piotroski_f * 9 >= 7 * evaluable)  # f / evaluable >= 7/9, in integers
+
+
+def _model_ok(verdict: str, good: tuple, profile: str) -> bool:
+    """A model passes with a good verdict, or when it does not apply to this type of company
+    (REITs, utilities: see src/profiles.py). Financials stay excluded: without Altman and Beneish
+    the screening has nothing that checks a bank's balance sheet."""
+    return verdict in good or (verdict == NOT_APPLICABLE and profile in ("reit", "utility"))
 
 
 def _fundamentals_buy_gate(ta) -> bool:
-    """Every check must be positively verified: missing data blocks the signal.
-    Financials (Altman/Beneish not applicable) therefore never pass this gate."""
+    """Every check must be positively verified: missing data blocks the signal."""
+    profile = profile_of(ta.sector_category)
     return (
-        ta.piotroski_f is not None
-        and ta.piotroski_f >= 7
-        and (ta.piotroski_evaluable or 0) >= MIN_PIOTROSKI_EVALUABLE
-        and ta.altman_zone in ("Sicura", "Grigia")
-        and ta.beneish_flag == "Nessun segnale"
+        _piotroski_strong(ta)
+        and _model_ok(ta.altman_zone, ("Sicura", "Grigia"), profile)
+        and _model_ok(ta.beneish_flag, ("Nessun segnale",), profile)
         and ta.target_upside_pct is not None
         and ta.target_upside_pct > 10
     )
+
+
+def _quality_reason(ta) -> str:
+    parts = [f"Piotroski F {ta.piotroski_f}/9 ({ta.piotroski_evaluable} criteri valutabili)"]
+    parts.append("Altman Z non applicabile a questo tipo di azienda" if ta.altman_zone == NOT_APPLICABLE
+                 else f"Altman Z in zona {ta.altman_zone.lower()}")
+    parts.append("Beneish non applicabile a questo tipo di azienda" if ta.beneish_flag == NOT_APPLICABLE
+                 else "nessun segnale Beneish di manipolazione")
+    profile = profile_of(ta.sector_category)
+    kind = f" ({profiles.get(profile)['label']})" if profile in ("reit", "utility") else ""
+    return f"Bilancio solido{kind}: " + ", ".join(parts) + "."
 
 
 def _fundamentals_sell_flag(ta) -> str | None:
@@ -117,10 +144,7 @@ def classify_signal(ta, history: pd.DataFrame, rsi: pd.Series, macd_df: pd.DataF
         )
 
     if len(buy_reasons) >= MIN_TECHNICAL_CONFIRMATIONS and _fundamentals_buy_gate(ta):
-        buy_reasons.append(
-            f"Bilancio solido: Piotroski F {ta.piotroski_f}/9 ({ta.piotroski_evaluable} criteri valutabili), "
-            f"Altman Z in zona {ta.altman_zone.lower()}, nessun segnale Beneish di manipolazione."
-        )
+        buy_reasons.append(_quality_reason(ta))
         buy_reasons.append(
             f"Il titolo tratta {ta.target_upside_pct:.0f}% sotto il target medio degli analisti "
             f"({ta.name or ta.ticker})."
