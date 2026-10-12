@@ -1,4 +1,68 @@
 {
-  "generated_at": "2026-10-09T22:40:34Z",
-  "tickers": {}
+  "generated_at": "2026-10-12T22:40:31Z",
+  "tickers": {
+    "JBHT": {
+      "verdict": "conferma",
+      "summary": "Il consenso degli analisti su J.B. Hunt resta orientato al 'Buy' (23 analisti), con JPMorgan che ha alzato il target a 280 dollari e Stephens che ha ripreso la copertura con rating Overweight e target 360 dollari. Nel terzo trimestre 2025 il titolo era salito di circa il 21% dopo risultati migliori delle attese, con utile per azione in crescita del 18% a 1,76 dollari nonostante un leggero calo dei ricavi. Non sono emerse notizie negative recenti rilevanti rispetto al segnale.",
+      "sources": [
+        {"title": "J.B. Hunt Transport Services, Inc. (JBHT)", "url": "https://stockanalysis.com/stocks/JBHT/", "publisher": "StockAnalysis", "date": "2026-07-10"},
+        {"title": "why jb hunt transport services rallied today", "url": "https://www.fool.com/investing/2025/10/16/why-jb-hunt-transport-services-rallied-today", "publisher": "The Motley Fool", "date": "2025-10-16"}
+      ]
+    },
+    "MCD": {
+      "verdict": "neutro",
+      "summary": "Le notizie su McDonald's sono contrastanti: UBS a luglio 2026 ha indicato il titolo come interessante dividend stock defensivo, con un rialzo del 3,6% in una seduta, ma Citi ha segnalato un calo del traffico nei ristoranti USA del 3,9% su base annua a fine giugno. Il titolo risultava in calo del 7,9% da inizio anno a circa 279 dollari, ben sopra il prezzo di entrata del segnale (235,65 dollari), suggerendo un ulteriore deterioramento successivo non confermato da fonti più recenti. Nel complesso le informazioni disponibili non confermano né contraddicono chiaramente il segnale di acquisto.",
+      "sources": [
+        {"title": "stockstory 2026 7 2 why mcdonalds mcd stock is up today", "url": "https://stocks.observer-reporter.com/observerreporter/article/stockstory-2026-7-2-why-mcdonalds-mcd-stock-is-up-today", "publisher": "StockStory via Observer-Reporter", "date": "2026-07-02"},
+        {"title": "www.marketbeat.com", "url": "https://www.marketbeat.com/stocks/NYSE/mcd/news", "publisher": "MarketBeat", "date": "2025-10-08"}
+      ]
+    },
+    "CPT": {
+      "verdict": "conferma",
+      "summary": "Camden Property Trust ha riportato nel secondo trimestre 2026 un Core FFO superiore alla guidance, con occupazione e tassi di rinnovo in miglioramento, confermando la guidance sull'intero anno dopo l'uscita dal mercato californiano e la riallocazione di 1,625 miliardi di dollari verso la Sun Belt. Morgan Stanley ha abbassato il target a 118 dollari mentre Cantor Fitzgerald lo ha alzato a 111 dollari, entrambi comunque ben sopra il prezzo di entrata del segnale (97,60 dollari). È stato inoltre dichiarato un dividendo trimestrale di 1,06 dollari per azione pagato a luglio 2026.",
+      "sources": [
+        {"title": "what you need to know ahead of camden property s earnings release", "url": "https://www.barchart.com/story/news/3203485/what-you-need-to-know-ahead-of-camden-property-s-earnings-release", "publisher": "Barchart", "date": "2026-07"},
+        {"title": "Camden Property Trust (CPT)", "url": "https://stockanalysis.com/stocks/CPT/", "publisher": "StockAnalysis", "date": "2026"}
+      ]
+    },
+    "INVH": {
+      "verdict": "conferma",
+      "summary": "Il rating medio degli analisti su Invitation Homes è 'Buy' (25 analisti), con un target a 12 mesi di 33,57 dollari e un recente rialzo di JPMorgan a 34 dollari, ben sopra il prezzo di entrata del segnale (26,70 dollari). I ricavi 2025 sono cresciuti del 4,91% a 2,72 miliardi di dollari. Va segnalato un rischio regolatorio: a gennaio 2026 un provvedimento dell'amministrazione USA per limitare gli acquisti di case unifamiliari da parte di grandi investitori istituzionali ha causato un calo intraday del 6% del titolo, un fattore di cui tenere conto nonostante il quadro di fondo positivo.",
+      "sources": [
+        {"title": "Invitation Homes Inc. (INVH)", "url": "https://stockanalysis.com/stocks/INVH/", "publisher": "StockAnalysis", "date": "2026-04-17"},
+        {"title": "invitation homes earnings preview what to expect", "url": "https://www.barchart.com/story/news/37149188/invitation-homes-earnings-preview-what-to-expect", "publisher": "Barchart", "date": "2026"}
+      ]
+    },
+    "KIM": {
+      "verdict": "neutro",
+      "summary": "Il quadro su Kimco Realty è misto: a fine aprile 2026 Zacks ha riportato un superamento delle attese sugli FFO del primo trimestre grazie a domanda di locazione e occupazione in crescita nei centri ancorati a supermercati, e il titolo ha guadagnato il 20,3% da inizio anno. Tuttavia è stato segnalato un downgrade di BofA a 'Neutral' da 'Buy' e un taglio del target a 21 dollari da parte di Baird, livello inferiore al prezzo di entrata del segnale (22,32 dollari). I due elementi si bilanciano, senza una direzione chiaramente prevalente.",
+      "sources": [
+        {"title": "is kimco realty stock underperforming the s p 500", "url": "https://www.barchart.com/story/news/30174834/is-kimco-realty-stock-underperforming-the-s-p-500", "publisher": "Barchart", "date": "2026-06"},
+        {"title": "money.cnn.com", "url": "https://money.cnn.com/quote/quote.html?symb=KIM", "publisher": "CNN Money", "date": "n.d."}
+      ]
+    },
+    "LHX": {
+      "verdict": "conferma",
+      "summary": "Il rating medio degli analisti su L3Harris Technologies è 'Buy' (21 analisti) con un target a 12 mesi di 381 dollari, ampiamente sopra il prezzo di entrata del segnale (238,25 dollari). L'azienda ha ricevuto ordini per 84 milioni di dollari legati ai sistemi radio Falcon manpack per l'esercito USA e in precedenza il titolo era salito del 6,8% dopo commenti su un budget della difesa vicino ai 1.000 miliardi di dollari, oltre a un rialzo del 14% premarket per un investimento proposto da 1 miliardo di dollari del Dipartimento della Difesa nella produzione di motori a razzo a propellente solido. Il quadro complessivo delle notizie disponibili è coerente con il segnale di acquisto.",
+      "sources": [
+        {"title": "L3Harris Technologies, Inc. (LHX)", "url": "https://stockanalysis.com/stocks/LHX/", "publisher": "StockAnalysis", "date": "2026-07-10"},
+        {"title": "l3harris technologies nyse lhx wins 1 billion contract us navy", "url": "https://www.nasdaq.com/articles/l3harris-technologies-nyse-lhx-wins-1-billion-contract-us-navy", "publisher": "Nasdaq", "date": "2026"}
+      ]
+    },
+    "MDT": {
+      "verdict": "nessuna notizia rilevante",
+      "summary": "Le fonti trovate per Medtronic sono scarse e in parte poco attendibili: diversi siti dall'aspetto automatizzato riportano una chiusura a 77,68 dollari con un supporto a 73,80, mentre MarketBeat mostra contemporaneamente un prezzo di 89,64 dollari senza data chiara, dati incompatibili tra loro. Un riferimento non verificabile cita una crescita nelle divisioni cardiovascolare e chirurgica compensata da un andamento più debole in diabete e neuromodulazione, ma non è stato possibile confermarlo con una fonte attendibile. Non è stata trovata una notizia recente e verificabile sufficientemente specifica da confermare o contraddire il segnale.",
+      "sources": [
+        {"title": "www.marketbeat.com", "url": "https://www.marketbeat.com/stocks/nyse/mdt/news", "publisher": "MarketBeat", "date": "n.d."}
+      ]
+    },
+    "CF": {
+      "verdict": "conferma",
+      "summary": "CF Industries ha dichiarato un dividendo trimestrale di 0,60 dollari per azione pagabile il 30 novembre 2026 e ha confermato che i risultati del terzo trimestre saranno pubblicati il 4 novembre 2026; il titolo ha guadagnato il 3,8% in una seduta recente sostenuto da prezzi dell'urea più solidi. Il consenso degli analisti è favorevole, con circa il 61% di rating 'Buy' su 23 analisti. I ricavi 2025 sono cresciuti del 19% a 7,08 miliardi di dollari con utile per azione in aumento del 32,6% a 8,97 dollari, elementi coerenti con il segnale di acquisto nonostante un calo di circa il 10% registrato ad aprile per il cessate il fuoco Iran-Israele.",
+      "sources": [
+        {"title": "CF Industries gains as dividend update and firmer nitrogen pricing support sentiment", "url": "https://www.quiverquant.com/news/CF+Industries+gains+as+dividend+update+and+firmer+nitrogen+pricing+support+sentiment", "publisher": "Quiver Quant", "date": "2026-10"},
+        {"title": "CF Industries shares drop 10% on Iran ceasefire but remain up 63% YTD", "url": "https://finder.techleap.nl/news/feed/cf-industries-shares-drop-10-on-iran-ceasefire-but-remain-up-63-ytd", "publisher": "Techleap Finder", "date": "2026-04-08"}
+      ]
+    }
+  }
 }
