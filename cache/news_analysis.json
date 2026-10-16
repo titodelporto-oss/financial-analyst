@@ -1,4 +1,29 @@
 {
-  "generated_at": "2026-10-15T22:40:46Z",
-  "tickers": {}
+  "generated_at": "2026-10-16T22:40:50Z",
+  "tickers": {
+    "CCL": {
+      "verdict": "contraddice",
+      "summary": "Le notizie recenti su Carnival Corporation non supportano un quadro ribassista: la società ha riportato un fatturato record nel primo trimestre 2026 di 6,17 miliardi di dollari e ha ridotto il debito totale di oltre 10 miliardi di dollari rispetto ai picchi del periodo pandemico. Fonti come Seeking Alpha descrivono un FY2026 solido (\"Cruising Toward A Solid FY 2026\"), e una fonte indica che 20 analisti su 29 hanno un rating Buy, sebbene un'altra fonte riporti dati discordanti sul sentiment. Il prezzo recente si aggira intorno a 25,85-26,33 dollari, in linea con l'entry price di 25,90 dollari del segnale. Il quadro fondamentale in miglioramento (ricavi, debito) sembra in contrasto con un segnale SELL, pur restando incertezza sui dati di sentiment analisti.",
+      "sources": [
+        {
+          "title": "Carnival: Cruising Toward A Solid FY 2026",
+          "url": "https://seekingalpha.com/article/4853102-carnival-cruising-toward-solid-fy26",
+          "publisher": "Seeking Alpha",
+          "date": null
+        },
+        {
+          "title": "The Most Overlooked Stock That’s Worthy of Your Attention Now Heading Into 2026",
+          "url": "https://finance.yahoo.com/news/most-overlooked-stock-worthy-attention-123002702.html",
+          "publisher": "Yahoo Finance",
+          "date": null
+        },
+        {
+          "title": "Carnival Corporation & plc",
+          "url": "https://trendspider.com/markets/symbols/CCL/",
+          "publisher": "TrendSpider",
+          "date": null
+        }
+      ]
+    }
+  }
 }
