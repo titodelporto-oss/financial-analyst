@@ -1,28 +1,21 @@
 {
-  "generated_at": "2026-10-16T22:40:50Z",
+  "generated_at": "2026-10-19T22:33:02Z",
   "tickers": {
+    "APP": {
+      "verdict": "neutro",
+      "summary": "AppLovin resta un titolo molto volatile: a dicembre 2025 veniva segnalato in rialzo a circa 714 dollari (+109% da inizio anno), mentre a ottobre 2025 MarketBeat riportava un calo del 14% in un giorno fino a 587 dollari, con rating di consenso \"Moderate Buy\" e target medio a 579,81 dollari. Un report più recente di Benzinga descrive un trimestre con EPS sopra le attese ma ricavi leggermente inferiori al consensus (1,924 miliardi contro 1,935 miliardi attesi), con il titolo in calo del 19,34% after-hours a 337,02 dollari; non è però chiaro a quale trimestre si riferisca esattamente. Il prezzo attuale nello screening (269,12 dollari) è ben al di sotto di questi livelli storici, segno di un'ulteriore discesa successiva non documentata dagli estratti trovati. Le notizie disponibili non permettono di confermare né smentire con certezza il segnale BUY attuale.",
+      "sources": [
+        {"title": "AppLovin stock is trending. Where is APP stock headed?", "url": "https://www.benzinga.com/node/60971574", "publisher": "Benzinga", "date": "2026 (trimestre non specificato)"},
+        {"title": "AppLovin (NASDAQ:APP) stock price down 14%, what's next?", "url": "https://www.marketbeat.com/instant-alerts/applovin-nasdaqapp-stock-price-down-14-whats-next-2025-10-06", "publisher": "MarketBeat", "date": "2025-10-06"},
+        {"title": "Why AppLovin (APP) stock is trading up today", "url": "https://business.mammothtimes.com/mammothtimes/article/stockstory-2025-12-9-why-applovin-app-stock-is-trading-up-today", "publisher": "StockStory", "date": "2025-12-09"}
+      ]
+    },
     "CCL": {
       "verdict": "contraddice",
-      "summary": "Le notizie recenti su Carnival Corporation non supportano un quadro ribassista: la società ha riportato un fatturato record nel primo trimestre 2026 di 6,17 miliardi di dollari e ha ridotto il debito totale di oltre 10 miliardi di dollari rispetto ai picchi del periodo pandemico. Fonti come Seeking Alpha descrivono un FY2026 solido (\"Cruising Toward A Solid FY 2026\"), e una fonte indica che 20 analisti su 29 hanno un rating Buy, sebbene un'altra fonte riporti dati discordanti sul sentiment. Il prezzo recente si aggira intorno a 25,85-26,33 dollari, in linea con l'entry price di 25,90 dollari del segnale. Il quadro fondamentale in miglioramento (ricavi, debito) sembra in contrasto con un segnale SELL, pur restando incertezza sui dati di sentiment analisti.",
+      "summary": "I dati più recenti trovati (riferiti a giugno 2026) mostrano un quadro favorevole per Carnival: titolo a 29,05 dollari (+3,29%), range a 52 settimane 22,11-34,03 dollari, e un consenso di 28 analisti mediamente orientato al \"Buy\" con target a 34,63 dollari. I fondamentali FY2025 indicavano ricavi a 26,62 miliardi di dollari (+6,40% annuo) e utili saliti del 44% a 2,76 miliardi. Questi elementi (sentiment analisti positivo, utili in forte crescita, target price superiore ai prezzi correnti) vanno in direzione opposta al segnale SELL odierno, basato su un entry price di 26,45 dollari, più basso rispetto ai livelli di giugno. Non sono stati trovati estratti con notizie negative recenti specifiche su Carnival nelle ultime settimane.",
       "sources": [
-        {
-          "title": "Carnival: Cruising Toward A Solid FY 2026",
-          "url": "https://seekingalpha.com/article/4853102-carnival-cruising-toward-solid-fy26",
-          "publisher": "Seeking Alpha",
-          "date": null
-        },
-        {
-          "title": "The Most Overlooked Stock That’s Worthy of Your Attention Now Heading Into 2026",
-          "url": "https://finance.yahoo.com/news/most-overlooked-stock-worthy-attention-123002702.html",
-          "publisher": "Yahoo Finance",
-          "date": null
-        },
-        {
-          "title": "Carnival Corporation & plc",
-          "url": "https://trendspider.com/markets/symbols/CCL/",
-          "publisher": "TrendSpider",
-          "date": null
-        }
+        {"title": "Carnival Corporation Ltd. (CCL)", "url": "https://stockanalysis.com/stocks/CCL", "publisher": "StockAnalysis.com", "date": "2026-06 (circa)"},
+        {"title": "Carnival Corporation", "url": "https://simplywall.st/stocks/us/consumer-services/nyse-ccl/carnival-corporation", "publisher": "Simply Wall St", "date": "non specificata"}
       ]
     }
   }
