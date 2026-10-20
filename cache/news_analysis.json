@@ -1,21 +1,28 @@
 {
-  "generated_at": "2026-10-19T22:33:02Z",
+  "generated_at": "2026-10-20T22:32:57Z",
   "tickers": {
     "APP": {
       "verdict": "neutro",
-      "summary": "AppLovin resta un titolo molto volatile: a dicembre 2025 veniva segnalato in rialzo a circa 714 dollari (+109% da inizio anno), mentre a ottobre 2025 MarketBeat riportava un calo del 14% in un giorno fino a 587 dollari, con rating di consenso \"Moderate Buy\" e target medio a 579,81 dollari. Un report più recente di Benzinga descrive un trimestre con EPS sopra le attese ma ricavi leggermente inferiori al consensus (1,924 miliardi contro 1,935 miliardi attesi), con il titolo in calo del 19,34% after-hours a 337,02 dollari; non è però chiaro a quale trimestre si riferisca esattamente. Il prezzo attuale nello screening (269,12 dollari) è ben al di sotto di questi livelli storici, segno di un'ulteriore discesa successiva non documentata dagli estratti trovati. Le notizie disponibili non permettono di confermare né smentire con certezza il segnale BUY attuale.",
+      "summary": "Le notizie recenti su AppLovin sono contrastanti e non tutte aggiornate: a dicembre 2025 il titolo trattava vicino ai massimi delle 52 settimane (circa 714,80$) dopo un aggiornamento societario alla conferenza Nasdaq, con rating di consenso \"Moderate Buy\". Tuttavia un report su un trimestre successivo segnala un fatturato di 1,924 miliardi$ sotto le stime (1,935 miliardi$), con l'utile per azione di 3,76$ che invece ha superato le attese (3,67$), e il titolo sceso oltre il 19% after-hours. MarketBeat riportava inoltre un calo del 14% in una singola seduta di ottobre 2025. Il quadro complessivo descrive un titolo molto volatile (oltre 60 movimenti superiori al 5% nell'ultimo anno), senza una notizia univoca e recente che confermi o contraddica chiaramente il segnale tecnico di oggi.",
       "sources": [
-        {"title": "AppLovin stock is trending. Where is APP stock headed?", "url": "https://www.benzinga.com/node/60971574", "publisher": "Benzinga", "date": "2026 (trimestre non specificato)"},
-        {"title": "AppLovin (NASDAQ:APP) stock price down 14%, what's next?", "url": "https://www.marketbeat.com/instant-alerts/applovin-nasdaqapp-stock-price-down-14-whats-next-2025-10-06", "publisher": "MarketBeat", "date": "2025-10-06"},
-        {"title": "Why AppLovin (APP) stock is trading up today", "url": "https://business.mammothtimes.com/mammothtimes/article/stockstory-2025-12-9-why-applovin-app-stock-is-trading-up-today", "publisher": "StockStory", "date": "2025-12-09"}
-      ]
-    },
-    "CCL": {
-      "verdict": "contraddice",
-      "summary": "I dati più recenti trovati (riferiti a giugno 2026) mostrano un quadro favorevole per Carnival: titolo a 29,05 dollari (+3,29%), range a 52 settimane 22,11-34,03 dollari, e un consenso di 28 analisti mediamente orientato al \"Buy\" con target a 34,63 dollari. I fondamentali FY2025 indicavano ricavi a 26,62 miliardi di dollari (+6,40% annuo) e utili saliti del 44% a 2,76 miliardi. Questi elementi (sentiment analisti positivo, utili in forte crescita, target price superiore ai prezzi correnti) vanno in direzione opposta al segnale SELL odierno, basato su un entry price di 26,45 dollari, più basso rispetto ai livelli di giugno. Non sono stati trovati estratti con notizie negative recenti specifiche su Carnival nelle ultime settimane.",
-      "sources": [
-        {"title": "Carnival Corporation Ltd. (CCL)", "url": "https://stockanalysis.com/stocks/CCL", "publisher": "StockAnalysis.com", "date": "2026-06 (circa)"},
-        {"title": "Carnival Corporation", "url": "https://simplywall.st/stocks/us/consumer-services/nyse-ccl/carnival-corporation", "publisher": "Simply Wall St", "date": "non specificata"}
+        {
+          "title": "AppLovin stock is trending. Where is APP stock headed?",
+          "url": "https://www.benzinga.com/node/60971574",
+          "publisher": "Benzinga",
+          "date": "non specificata"
+        },
+        {
+          "title": "Why AppLovin (APP) Stock Is Trading Up Today",
+          "url": "https://business.mammothtimes.com/mammothtimes/article/stockstory-2025-12-9-why-applovin-app-stock-is-trading-up-today",
+          "publisher": "StockStory",
+          "date": "2025-12-09"
+        },
+        {
+          "title": "AppLovin (NASDAQ:APP) Stock Price Down 14%, What's Next?",
+          "url": "https://www.marketbeat.com/instant-alerts/applovin-nasdaqapp-stock-price-down-14-whats-next-2025-10-06",
+          "publisher": "MarketBeat",
+          "date": "2025-10-06"
+        }
       ]
     }
   }
