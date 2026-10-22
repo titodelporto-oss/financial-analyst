@@ -1,14 +1,4 @@
 {
-  "generated_at": "2026-10-21T22:32:49Z",
-  "tickers": {
-    "APP": {
-      "verdict": "contraddice",
-      "summary": "Le notizie recenti su AppLovin sono negative rispetto al segnale BUY: nel secondo trimestre 2026 i ricavi sono stati di 1,924 miliardi di dollari, sotto le stime di consenso di 1,935 miliardi, nonostante una crescita del 53% su base annua. Dopo la pubblicazione dei risultati il titolo è sceso di circa il 19% in after-hours, scendendo a 337,02 dollari. La guidance sul terzo trimestre indica ricavi tra 2,055 e 2,085 miliardi di dollari. Il prezzo attuale (circa 268 dollari secondo lo screening) è ulteriormente sotto quei livelli, segno di una debolezza persistente del titolo rispetto ai massimi del 2025 (oltre 700 dollari).",
-      "sources": [
-        {"title": "AppLovin stock is trending. Where is APP stock headed?", "url": "https://www.benzinga.com/node/60971574", "publisher": "Benzinga", "date": "non specificata"},
-        {"title": "Why AppLovin (APP) stock is trading up today", "url": "https://business.mammothtimes.com/mammothtimes/article/stockstory-2025-12-9-why-applovin-app-stock-is-trading-up-today", "publisher": "StockStory via Mammoth Times", "date": "2025-12-09"},
-        {"title": "AppLovin (NASDAQ:APP) stock price down 14%, what's next?", "url": "https://www.marketbeat.com/instant-alerts/applovin-nasdaqapp-stock-price-down-14-whats-next-2025-10-06", "publisher": "MarketBeat", "date": "2025-10-06"}
-      ]
-    }
-  }
+  "generated_at": "2026-10-22T22:32:30Z",
+  "tickers": {}
 }
