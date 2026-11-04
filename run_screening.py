@@ -35,6 +35,7 @@ def run(limit: int | None = None) -> None:
     start = time.time()
 
     results = []
+    failed = []  # titoli non analizzati, con il motivo: finiscono nel log e nel JSON
     errors = 0
     done = 0
 
@@ -46,8 +47,11 @@ def run(limit: int | None = None) -> None:
         for fut in as_completed(futures):
             r = fut.result()
             done += 1
-            if r.error:
+            if r.error is not None:
                 errors += 1
+                message = _short_error(r.error)
+                failed.append({"ticker": r.ticker, "error": message})
+                print(f"  ERRORE {r.ticker}: {message}", flush=True)
             else:
                 results.append(r)
             if done % 500 == 0:
@@ -64,6 +68,8 @@ def run(limit: int | None = None) -> None:
         "errors": errors,
         "elapsed_seconds": round(elapsed, 1),
         "results": [asdict(r) for r in results],
+        # voce aggiunta il 4/11/2026: chi legge solo "results" e "generated_at" non cambia nulla
+        "failed": sorted(failed, key=lambda f: f["ticker"]),
     }
 
     LATEST_PATH.write_text(json.dumps(payload, indent=2))
@@ -72,6 +78,14 @@ def run(limit: int | None = None) -> None:
         f"{len(results)} titoli analizzati, {errors} errori. Salvato in {LATEST_PATH}",
         flush=True,
     )
+    if failed:
+        print(f"Titoli non analizzati ({len(failed)}): {' '.join(f['ticker'] for f in payload['failed'])}", flush=True)
+
+
+def _short_error(error: str, max_len: int = 300) -> str:
+    """Il messaggio di errore su una riga sola e non troppo lungo, per il log e il JSON."""
+    text = " ".join(str(error).split()) or "errore senza messaggio"
+    return text if len(text) <= max_len else text[: max_len - 3] + "..."
 
 
 if __name__ == "__main__":
