@@ -21,10 +21,14 @@ FAKE_ERRORS = {
 }
 
 
+# punteggi tutti diversi: a parità di punteggio l'ordine dipenderebbe da chi finisce prima
+FAKE_SCORES = {"GOOGL": 5.0, "AAPL": 4.0, "MSFT": 3.0}
+
+
 def _fake_analyze(ticker: str) -> TickerAnalysis:
     if ticker in FAKE_ERRORS:
         return _empty(ticker, FAKE_ERRORS[ticker])
-    return _ok(ticker, score=len(ticker))
+    return _ok(ticker, score=FAKE_SCORES[ticker])
 
 
 def _run(monkeypatch, tmp_path, tickers):
