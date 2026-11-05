@@ -17,6 +17,7 @@ import yfinance as yf
 
 from .data import fetch_fundamentals, fetch_price_history
 from .models import altman_z, beneish_m, piotroski_f
+from .ratelimit import RateLimitGate
 from .sector import classify
 from .statements import from_yahoo
 from .indicators import (
@@ -181,15 +182,44 @@ def _peer_info(info: dict, annual) -> dict:
 
 RETRYABLE_MARKERS = ("Invalid Crumb", "Too Many Requests", "429", "401")
 
+# usato quando il titolo non viene (ri)provato perché il tempo massimo è finito durante un blocco;
+# contiene "Too Many Requests", così il secondo giro dello screening lo riconosce come bloccato
+STOPPED_BY_DEADLINE = "Too Many Requests: non analizzato, tempo massimo finito durante il blocco di Yahoo"
 
-def analyze_ticker(ticker: str, retries: int = 3) -> TickerAnalysis:
+
+def is_rate_limited(error: str | None) -> bool:
+    """True se l'errore viene dal blocco di Yahoo (troppe richieste) e quindi vale la pena ritentare."""
+    return error is not None and any(m in error for m in RETRYABLE_MARKERS)
+
+
+def analyze_ticker(ticker: str, retries: int = 3, gate: RateLimitGate | None = None) -> TickerAnalysis:
+    """Analizza un titolo, ritentando se Yahoo blocca le richieste.
+
+    Senza `gate` (il sito Streamlit) si comporta come sempre: brevi attese di 1,5 / 3 / 4,5 s.
+    Con `gate` (lo screening notturno) le attese sono comuni a tutti i titoli e più lunghe."""
+    if gate is not None:
+        return _analyze_with_gate(ticker, retries, gate)
     last_error = None
     for attempt in range(retries):
         result = _analyze_ticker_once(ticker)
-        if result.error is None or not any(m in result.error for m in RETRYABLE_MARKERS):
+        if not is_rate_limited(result.error):
             return result
         last_error = result.error
         time.sleep(1.5 * (attempt + 1))  # backoff before retrying a rate-limited call
+    return _empty(ticker, last_error)
+
+
+def _analyze_with_gate(ticker: str, retries: int, gate: RateLimitGate) -> TickerAnalysis:
+    last_error = None
+    for _ in range(retries):
+        if not gate.wait():  # il tempo massimo è finito (o finirebbe durante la pausa): niente richieste
+            return _empty(ticker, last_error or STOPPED_BY_DEADLINE)
+        result = _analyze_ticker_once(ticker)
+        if not is_rate_limited(result.error):
+            gate.report_ok()
+            return result
+        last_error = result.error
+        gate.report_limit()
     return _empty(ticker, last_error)
 
 
