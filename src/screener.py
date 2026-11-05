@@ -15,11 +15,12 @@ from dataclasses import dataclass, field
 
 import yfinance as yf
 
+from . import edgar, profiles
 from .data import fetch_fundamentals, fetch_price_history
 from .models import altman_z, beneish_m, piotroski_f
 from .ratelimit import RateLimitGate
 from .sector import classify
-from .statements import from_yahoo
+from .statements import fill_from, from_yahoo, recompute_derived, split_adjust
 from .indicators import (
     calculate_bollinger_bands,
     calculate_macd,
@@ -140,11 +141,13 @@ def _beneish_score(flag: str) -> float:
     return -2 if flag == "Possibile manipolazione" else 0
 
 
-def _market_value_at_fye(history, annual) -> float | None:
+def _market_value_at_fye(history, annual, shares_on_today_basis: bool = False) -> float | None:
     """Market cap on the last fiscal year end: price then x shares then.
 
     Yahoo's Close is retroactively divided by later stock splits while the share
-    count in the old balance sheet is not, so later splits are multiplied back."""
+    count in the old balance sheet is not, so later splits are multiplied back.
+    SEC share counts already went through split_adjust (`shares_on_today_basis`):
+    there the split-adjusted Close is used as it is."""
     if annual.empty or history.empty:
         return None
     fye = annual.index[-1]
@@ -157,7 +160,7 @@ def _market_value_at_fye(history, annual) -> float | None:
     if before.empty or (when - before.index[-1]).days > 7:
         return None
     factor = 1.0
-    if "Stock Splits" in history.columns:
+    if not shares_on_today_basis and "Stock Splits" in history.columns:
         later = history.loc[history.index > before.index[-1], "Stock Splits"]
         later = later[later > 0]
         if not later.empty:
@@ -177,6 +180,137 @@ def _peer_info(info: dict, annual) -> dict:
     # the same definition the analysis app uses (Yahoo's own "freeCashflow" differs)
     if not annual.empty and annual["fcf"].notna().iloc[-1]:
         out["fcfAnnual"] = float(annual["fcf"].iloc[-1])
+    return out
+
+
+def load_statements(ticker: str, ticker_obj, history, info: dict | None = None):
+    """Bilanci annuali: dalla SEC (ufficiali, gratuiti, senza blocchi); da Yahoo solo se la SEC
+    non li ha (società estere che non depositano il 10-K, ticker non trovato, errore della SEC).
+    Le singole voci che mancano alla SEC si prendono da Yahoo solo se servono (fill_missing_from_yahoo).
+
+    Restituisce (bilanci, codice SIC, descrizione SIC, True se dalla SEC)."""
+    info = info or {}
+    if not edgar.user_agent():
+        reason = "SEC_USER_AGENT mancante"
+    else:
+        try:
+            cik = edgar.get_cik(ticker)
+            if not cik:
+                reason = "ticker non trovato alla SEC"
+            else:
+                annual = edgar.parse_annual_statements(edgar.fetch_company_facts(cik))
+                if annual.empty:
+                    reason = "nessun bilancio annuale (10-K) alla SEC"
+                else:
+                    sic, sic_description = None, None
+                    try:
+                        sub = edgar.fetch_submissions(cik)
+                        sic, sic_description = sub.get("sic") or None, sub.get("sicDescription")
+                    except Exception:  # noqa: BLE001 - senza SIC si usa il settore di Yahoo
+                        pass
+                    # split dallo storico prezzi già scaricato (2 anni: copre i bilanci usati dai modelli)
+                    splits = history["Stock Splits"] if "Stock Splits" in history.columns else None
+                    annual = drop_share_unit_errors(split_adjust(annual, splits), ticker,
+                                                    reference=info.get("sharesOutstanding"))
+                    sector = classify(sic, sic_description, info.get("sector"), info.get("industry"))
+                    annual = fill_missing_from_yahoo(annual, ticker, ticker_obj, sector, splits)
+                    return annual, sic, sic_description, True
+        except Exception as exc:  # noqa: BLE001
+            reason = f"errore SEC ({' '.join(str(exc).split())[:120]})"
+    print(f"  BILANCI DA YAHOO {ticker}: {reason}", flush=True)
+    annual = from_yahoo(ticker_obj.balance_sheet, ticker_obj.income_stmt, ticker_obj.cashflow)
+    return annual, None, None, False
+
+
+SHARE_JUMP = 50  # azioni oltre 50 volte (o sotto 1/50) il riferimento: errore di unità
+
+
+def drop_share_unit_errors(annual, ticker: str = "", reference: float | None = None):
+    """Numero di azioni con un errore di unità nei dati SEC (PKG 2025: 89 miliardi invece di 89 milioni;
+    RTX 2011-2021: in migliaia; PATTY D36): l'anno sospetto diventa N/D invece di falsare Altman e
+    Piotroski. Riferimento: le azioni di oggi secondo Yahoo (`reference`, dalla richiesta già fatta),
+    altrimenti la mediana degli ultimi 3 anni. Gli split sono già stati applicati prima."""
+    sh = annual["shares_outstanding"]
+    typical = reference if reference and reference > 0 else sh[sh > 0].tail(3).median()
+    if typical != typical:  # nessun dato
+        return annual
+    ratio = sh / typical
+    bad = (ratio > SHARE_JUMP) | (ratio < 1 / SHARE_JUMP)
+    if not bad.any():
+        return annual
+    annual = annual.copy()
+    annual.loc[bad, "shares_outstanding"] = float("nan")
+    years = ", ".join(str(d.year) for d in annual.index[bad])
+    print(f"  AZIONI SOSPETTE {ticker}: numero di azioni {years} lontano dal valore tipico, considerato N/D", flush=True)
+    return annual
+
+
+# voci usate da ciascun modello, negli ultimi due esercizi (Beneish confronta l'anno t con t-1)
+ALTMAN_FIELDS = ("total_assets", "current_assets", "current_liabilities", "retained_earnings", "ebit",
+                 "total_liabilities", "revenue", "equity", "shares_outstanding")
+BENEISH_FIELDS = ("receivables", "revenue", "gross_profit", "current_assets", "net_ppe", "total_assets",
+                  "d_and_a", "sga", "long_term_debt", "current_liabilities", "ocf", "net_income")
+# in quale prospetto di Yahoo si trova ogni voce: si scarica solo quello che serve
+YAHOO_STATEMENT = {
+    "income_stmt": ("revenue", "gross_profit", "ebit", "sga", "net_income"),
+    "cashflow": ("d_and_a", "ocf"),
+}  # tutte le altre voci: stato patrimoniale ("balance_sheet")
+
+
+def fill_missing_from_yahoo(annual, ticker: str, ticker_obj, sector, splits=None):
+    """Voci che mancano alla SEC negli ultimi due esercizi: prese da Yahoo, solo se servono.
+
+    - solo per i modelli che valgono per questo tipo di azienda (banche, REIT e utility: nessuna);
+    - si scarica solo il prospetto Yahoo che contiene la voce (1-3 richieste, di solito 1);
+    - per una voce mancante si prendono da Yahoo *entrambi* gli anni, così il confronto t / t-1 di
+      Beneish non mescola due fonti; se Yahoo non li ha tutti e due, la voce resta com'era;
+    - se Yahoo non risponde (blocco), il titolo non fallisce: la voce resta N/D e lo dice il log."""
+    if annual.empty or sector.is_financial:
+        return annual
+    rules = profiles.get(sector.profile)
+    wanted = set()
+    if rules["altman"]:
+        wanted.update(ALTMAN_FIELDS)
+    if rules["beneish"]:
+        wanted.update(BENEISH_FIELDS)
+    last2 = annual.index[-2:]
+    missing = sorted(f for f in wanted if annual.loc[last2, f].isna().any())
+    if not missing:
+        return annual
+
+    needed_statements = {st for st, fields in YAHOO_STATEMENT.items() if set(fields) & set(missing)}
+    other = [f for f in missing if not any(f in v for v in YAHOO_STATEMENT.values())]
+    if other:
+        needed_statements.add("balance_sheet")
+    try:
+        frames = {st: getattr(ticker_obj, st) for st in ("balance_sheet", "income_stmt", "cashflow")
+                  if st in needed_statements}
+        yahoo = from_yahoo(frames.get("balance_sheet"), frames.get("income_stmt"), frames.get("cashflow"),
+                           require_core=False)
+    except Exception as exc:  # noqa: BLE001 - un blocco di Yahoo non deve far fallire il titolo
+        print(f"  VOCI DA YAHOO NON DISPONIBILI {ticker} ({' '.join(str(exc).split())[:80]}): "
+              f"restano N/D {', '.join(missing)}", flush=True)
+        return annual
+
+    out, filled = annual.copy(), []
+    for f in missing:
+        if f not in yahoo or yahoo[f].dropna().empty:
+            continue
+        both = fill_from(out.loc[last2, [f]].assign(**{f: float("nan")}), yahoo, f)[f]
+        if both.notna().all():  # Yahoo ha tutti e due gli anni: si usano i suoi, per entrambi
+            out.loc[last2, f] = both
+            filled.append(f)
+            if f == "shares_outstanding":  # come nel percorso Yahoo: split dopo la fine dell'esercizio
+                out.loc[last2, "filed_shares_outstanding"] = last2
+    if "shares_outstanding" in filled:
+        out.loc[last2, "shares_outstanding"] = split_adjust(out.loc[last2], splits)["shares_outstanding"]
+    if any(f in filled for f in ("current_assets", "current_liabilities", "ebit", "d_and_a", "ocf")):
+        for derived in ("working_capital", "ebitda", "fcf"):
+            out.loc[last2, derived] = float("nan")
+        out = recompute_derived(out)
+    still = [f for f in missing if f not in filled]
+    print(f"  VOCI DA YAHOO {ticker}: {', '.join(filled) or 'nessuna'}"
+          + (f"; restano N/D {', '.join(still)}" if still else ""), flush=True)
     return out
 
 
@@ -246,9 +380,9 @@ def _analyze_ticker_once(ticker: str) -> TickerAnalysis:
         fundamentals = fetch_fundamentals(ticker_obj, info)
         target_mean_price = fundamentals.get("targetMeanPrice")
 
-        annual = from_yahoo(ticker_obj.balance_sheet, ticker_obj.income_stmt, ticker_obj.cashflow)
-        sector = classify(None, None, info.get("sector"), info.get("industry"))
-        altman = altman_z(annual, sector, _market_value_at_fye(history, annual))
+        annual, sic, sic_description, from_sec = load_statements(ticker, ticker_obj, history, info)
+        sector = classify(sic, sic_description, info.get("sector"), info.get("industry"))
+        altman = altman_z(annual, sector, _market_value_at_fye(history, annual, shares_on_today_basis=from_sec))
         piotroski = piotroski_f(annual, sector)
         beneish = beneish_m(annual, sector)
         f_score = int(piotroski.value) if piotroski.available else None

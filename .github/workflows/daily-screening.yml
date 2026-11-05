@@ -25,6 +25,10 @@ jobs:
 
       - name: Esegui screening
         run: python3 run_screening.py
+        env:
+          # contatto richiesto dalla SEC per scaricare i bilanci (segreto del repository, mai nel codice);
+          # se manca, lo screening usa i bilanci di Yahoo come prima
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
 
       - name: Salva i risultati nel repository
         run: |

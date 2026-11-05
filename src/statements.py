@@ -34,6 +34,9 @@ FIELDS = FLOW_FIELDS + INSTANT_FIELDS + DERIVED_FIELDS
 
 OUTFLOW_FIELDS = ("capex", "buyback", "dividends_paid")
 
+# figures that a stock split changes; their own filing date is kept (SEC data, see split_adjust)
+SPLIT_SENSITIVE = ("shares_outstanding",)
+
 # Plain-language labels for the UI
 FIELD_LABELS = {
     "revenue": "Ricavi", "cost_of_revenue": "Costo del venduto", "gross_profit": "Utile lordo",
@@ -79,13 +82,64 @@ def finalize(df: pd.DataFrame) -> pd.DataFrame:
     for col in OUTFLOW_FIELDS:
         df[col] = df[col].abs()
     df["gross_profit"] = df["gross_profit"].fillna(df["revenue"] - df["cost_of_revenue"])
-    df["ebit"] = df["ebit"].fillna(df["pretax_income"] + df["interest_expense"]).fillna(df["operating_income"])
+    # operating income first: pretax income + interest also contains gains on investments and other
+    # non-operating items (PATTY audit D13, Alphabet 2025 +24%); it is only a fallback. The SEC has no
+    # "EBIT" tag, so with SEC data this order decides the figure Altman uses.
+    df["ebit"] = df["operating_income"].fillna(df["ebit"]).fillna(df["pretax_income"] + df["interest_expense"])
     df["working_capital"] = df["current_assets"] - df["current_liabilities"]
     df["ebitda"] = df["ebit"] + df["d_and_a"]
     df["fcf"] = df["ocf"] - df["capex"]
-    df = df[FIELDS + ["filed"]]
+    extra = [f"filed_{f}" for f in SPLIT_SENSITIVE if f"filed_{f}" in df.columns]
+    df = df[FIELDS + ["filed"] + extra]
     df.index = pd.to_datetime(df.index)
     return df.sort_index()
+
+
+def fill_from(df: pd.DataFrame, other: pd.DataFrame, field: str, tolerance_days: int = 7) -> pd.DataFrame:
+    """Fill the gaps of one field with another source's values for the same fiscal
+    year ends (dates matched within a few days). Returns the filled frame. (Copy of PATTY's.)"""
+    if other is None or other.empty or field not in other or other[field].dropna().empty:
+        return df
+    src = other[field].dropna().sort_index()
+    aligned = src.reindex(df.index, method="nearest", tolerance=pd.Timedelta(days=tolerance_days))
+    out = df.copy()
+    out[field] = out[field].fillna(aligned)
+    return out
+
+
+def recompute_derived(df: pd.DataFrame) -> pd.DataFrame:
+    """Derived fields again, after some inputs were filled from another source."""
+    df = df.copy()
+    df["working_capital"] = df["working_capital"].fillna(df["current_assets"] - df["current_liabilities"])
+    df["ebitda"] = df["ebitda"].fillna(df["ebit"] + df["d_and_a"])
+    df["fcf"] = df["fcf"].fillna(df["ocf"] - df["capex"])
+    return df
+
+
+def split_adjust(annual: pd.DataFrame, splits: pd.Series) -> pd.DataFrame:
+    """Put share counts reported before a stock split on today's basis (copy of PATTY's).
+
+    SEC figures are kept as originally published: a 10:1 split after a 10-K was filed makes its
+    share count 10x too small compared with later years (Piotroski would see a fake dilution) and
+    with today's split-adjusted prices. Each figure is multiplied by the splits that happened
+    *after* its own filing date (a split before filing is already reflected in the 10-K)."""
+    df = annual.copy()
+    if splits is None or len(splits) == 0 or df.empty:
+        return df
+    s = splits[splits > 0]
+    idx = pd.to_datetime(s.index)
+    s.index = idx.tz_localize(None) if idx.tz is not None else idx
+
+    def factor(filed):
+        if pd.isna(filed):
+            return 1.0  # unknown filing date: nothing to adjust
+        later = s[s.index > filed]
+        return float(later.prod()) if len(later) else 1.0
+
+    for col in SPLIT_SENSITIVE:
+        dates = df[f"filed_{col}"] if f"filed_{col}" in df.columns else df["filed"]
+        df[col] = df[col] * dates.map(factor)
+    return df
 
 
 # yfinance row names, in order of preference, for each canonical field
@@ -125,9 +179,11 @@ YAHOO_ROWS = {
 }
 
 
-def from_yahoo(balance_sheet: pd.DataFrame, income_stmt: pd.DataFrame, cashflow: pd.DataFrame) -> pd.DataFrame:
+def from_yahoo(balance_sheet: pd.DataFrame, income_stmt: pd.DataFrame, cashflow: pd.DataFrame,
+               require_core: bool = True) -> pd.DataFrame:
     """Merge yfinance's three annual statements (rows = line items, columns = dates)
-    into the canonical frame, aligned by fiscal year end date."""
+    into the canonical frame, aligned by fiscal year end date.
+    require_core=False keeps every year: used when only one statement was downloaded to fill gaps."""
     frames = [f for f in (balance_sheet, income_stmt, cashflow) if f is not None and not f.empty]
     if not frames:
         return empty_frame()
@@ -151,7 +207,8 @@ def from_yahoo(balance_sheet: pd.DataFrame, income_stmt: pd.DataFrame, cashflow:
 
     # yfinance pads the oldest year with an almost-empty column: drop years with no core data
     core = ["revenue", "total_assets", "net_income"]
-    out = out[out[core].notna().any(axis=1)]
+    if require_core:
+        out = out[out[core].notna().any(axis=1)]
     return finalize(out)
 
 
