@@ -5,3 +5,6 @@ __pycache__/
 *.log
 cache/us_universe.csv
 cache/core_universe.csv
+
+# chiavi e segreti: mai su GitHub
+.streamlit/secrets.toml

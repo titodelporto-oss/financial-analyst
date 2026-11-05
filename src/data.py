@@ -17,6 +17,11 @@ def fetch_price_history(ticker_obj: yf.Ticker, period: str = "2y", interval: str
         return df
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
+    # Yahoo a volte aggiunge in fondo una riga senza prezzo (screening notturni di fine ottobre e
+    # novembre 2026: ultimo prezzo NaN per tutti i titoli, quindi upside NaN e nessun BUY possibile).
+    # Le righe senza chiusura si scartano (indicatori e prezzo attuale usano solo giorni con un prezzo).
+    if "Close" in df.columns:
+        df = df[df["Close"].notna()]
     return df
 
 
